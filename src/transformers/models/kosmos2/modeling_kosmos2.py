@@ -1196,10 +1196,6 @@ class Kosmos2PreTrainedModel(PreTrainedModel):
     supports_gradient_checkpointing = True
 
 
-@add_start_docstrings(
-    """The vision model from KOSMOS-2 without any head or projection on top.""",
-    KOSMOS2_START_DOCSTRING,
-)
 class Kosmos2VisionModel(Kosmos2PreTrainedModel):
     config_class = Kosmos2VisionConfig
     main_input_name = "pixel_values"
@@ -1236,10 +1232,6 @@ class Kosmos2VisionModel(Kosmos2PreTrainedModel):
         )
 
 
-@add_start_docstrings(
-    """The text model from KOSMOS-2 without any head or projection on top.""",
-    KOSMOS2_START_DOCSTRING,
-)
 class Kosmos2TextModel(Kosmos2PreTrainedModel):
     config_class = Kosmos2TextConfig
 
