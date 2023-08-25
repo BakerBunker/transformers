@@ -43,9 +43,7 @@ from .configuration_kosmos2 import Kosmos2Config, Kosmos2TextConfig, Kosmos2Visi
 
 logger = logging.get_logger(__name__)
 
-_CHECKPOINT_FOR_DOC = "microsoft/kosmos-2-patch14-224"
 _CONFIG_FOR_DOC = Kosmos2Config
-_EXPECTED_OUTPUT_SHAPE = None
 
 KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST = [
     "microsoft/kosmos-2-patch14-224",
@@ -533,7 +531,6 @@ class Kosmos2VisionTransformer(nn.Module):
         self.encoder = Kosmos2VisionEncoder(config)
         self.post_layernorm = nn.LayerNorm(embed_dim, eps=config.layer_norm_eps)
 
-    @add_start_docstrings_to_model_forward(KOSMOS2_VISION_INPUTS_DOCSTRING)
     def forward(
         self,
         pixel_values: Optional[torch.FloatTensor] = None,
@@ -1509,7 +1506,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         self.text_model.model.embed_tokens = value
 
     @add_start_docstrings_to_model_forward(KOSMOS2_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=Kosmos2ModelOutput, config_class=Kosmos2Config)
+    @replace_return_docstrings(output_type=Kosmos2ModelOutput, config_class=_CONFIG_FOR_DOC)
     def forward(
         self,
         pixel_values: Optional[torch.Tensor] = None,
@@ -1614,7 +1611,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         self.text_model.set_output_embeddings(new_embeddings)
 
     @add_start_docstrings_to_model_forward(KOSMOS2_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=Kosmos2ForConditionalGenerationModelOutput, config_class=Kosmos2Config)
+    @replace_return_docstrings(output_type=Kosmos2ForConditionalGenerationModelOutput, config_class=_CONFIG_FOR_DOC)
     def forward(
         self,
         pixel_values: Optional[torch.Tensor] = None,
