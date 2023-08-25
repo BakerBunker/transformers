@@ -126,12 +126,18 @@ KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""
     Args:
         input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
             Indices of input sequence tokens in the vocabulary. Padding will be ignored by default should you provide
-            it. Indices can be obtained using [`AutoTokenizer`]. See [`PreTrainedTokenizer.encode`] and
-            [`PreTrainedTokenizer.__call__`] for details. [What are input IDs?](../glossary#input-ids)
+            it.
+
+            Indices can be obtained using [`AutoTokenizer`]. See [`PreTrainedTokenizer.encode`] and
+            [`PreTrainedTokenizer.__call__`] for details.
+
+            [What are input IDs?](../glossary#input-ids)
         attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
             Mask to avoid performing attention on padding token indices. Mask values selected in `[0, 1]`:
+
             - 1 for tokens that are **not masked**,
             - 0 for tokens that are **masked**.
+
             [What are attention masks?](../glossary#attention-mask)
         img_features:
         img_attn_mask:
@@ -182,7 +188,6 @@ KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""
 
 KOSMOS2_INPUTS_DOCSTRING = r"""
     Args:
-
 """
 
 
