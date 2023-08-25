@@ -51,6 +51,9 @@ KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST = [
 ]
 
 
+# TODO: def _init_weights
+
+
 # Copied from transformers.models.bart.modeling_bart._expand_mask
 def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
     """
@@ -101,10 +104,46 @@ def create_position_ids_from_input_ids(input_ids, padding_idx, past_key_values_l
     return incremental_indices.long() + padding_idx
 
 
-KOSMOS2_START_DOCSTRING = r"""Kosmos-2"""
-KOSMOS2_VISION_INPUTS_DOCSTRING = r"""Kosmos-2"""
-KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""Kosmos-2"""
-KOSMOS2_INPUTS_DOCSTRING = r"""Kosmos-2"""
+KOSMOS2_START_DOCSTRING = r"""
+"""
+
+KOSMOS2_VISION_INPUTS_DOCSTRING = r"""
+    Args:
+        pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
+            Pixel values. Pixel values can be obtained using [`Blip2Processor`]. See [`Blip2Processor.__call__`] for
+            details.
+        output_attentions (`bool`, *optional*):
+            Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
+            tensors for more detail.
+        output_hidden_states (`bool`, *optional*):
+            Whether or not to return the hidden states of all layers. See `hidden_states` under returned tensors for
+            more detail.
+        return_dict (`bool`, *optional*):
+            Whether or not to return a [`~utils.ModelOutput`] instead of a plain tuple.
+"""
+
+KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""
+    Args:
+        input_ids: Optional[torch.Tensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        img_features: Optional[torch.Tensor] = None,
+        img_attn_mask: Optional[torch.Tensor] = None,
+        encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
+        head_mask: Optional[torch.Tensor] = None,
+        cross_attn_head_mask: Optional[torch.Tensor] = None,
+        past_key_values: Optional[List[torch.FloatTensor]] = None,
+        inputs_embeds: Optional[torch.Tensor] = None,
+        use_cache: Optional[bool] = None,
+        output_attentions: Optional[bool] = None,
+        output_hidden_states: Optional[bool] = None,
+        return_dict: Optional[bool] = None,
+"""
+
+KOSMOS2_INPUTS_DOCSTRING = r"""
+    Args:
+
+"""
 
 
 @dataclass
