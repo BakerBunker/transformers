@@ -151,7 +151,7 @@ KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""
             [What are attention masks?](../glossary#attention-mask)
         image_features: (`torch.FloatTensor` of shape `(batch_size, latent_query_num, hidden_size)`, *optional*):
             Sequence of hidden-states at the output of `Kosmos2ImageToTextConnector`.
-        img_attn_mask:
+        image_attn_mask:
         encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
             Sequence of hidden-states at the output of the last layer of the encoder. Used in the cross-attention if
             the model is configured as a decoder.
@@ -210,7 +210,7 @@ KOSMOS2_INPUTS_DOCSTRING = r"""
             [`PreTrainedTokenizer.__call__`] for details.
 
             [What are input IDs?](../glossary#input-ids)
-        img_attn_mask:
+        image_attn_mask:
         attention_mask (`torch.Tensor` of shape `(batch_size, sequence_length)`, *optional*):
             Mask to avoid performing attention on padding token indices. Mask values selected in `[0, 1]`:
 
@@ -1172,7 +1172,7 @@ class Kosmos2TextTransformer(nn.Module):
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         image_features: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
@@ -1207,13 +1207,13 @@ class Kosmos2TextTransformer(nn.Module):
         # We don't need img info. when `past_key_values_length` > 0
         if past_key_values_length > 0:
             image_features = None
-            img_attn_mask = None
+            image_attn_mask = None
 
         hidden_states = self.forward_embedding(
             input_ids=input_ids,
             inputs_embeds=inputs_embeds,
             image_features=image_features,
-            img_input_mask=img_attn_mask,
+            img_input_mask=image_attn_mask,
             past_key_values_length=past_key_values_length,
         )
 
@@ -1406,7 +1406,7 @@ class Kosmos2TextModel(Kosmos2PreTrainedModel):
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         image_features: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
@@ -1426,7 +1426,7 @@ class Kosmos2TextModel(Kosmos2PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             image_features=image_features,
-            img_attn_mask=img_attn_mask,
+            image_attn_mask=image_attn_mask,
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask,
             head_mask=head_mask,
@@ -1479,7 +1479,7 @@ class Kosmos2TextForCausalLM(Kosmos2PreTrainedModel):
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         image_features: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         encoder_hidden_states: Optional[torch.Tensor] = None,
         encoder_attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
@@ -1512,7 +1512,7 @@ class Kosmos2TextForCausalLM(Kosmos2PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             image_features=image_features,
-            img_attn_mask=img_attn_mask,
+            image_attn_mask=image_attn_mask,
             encoder_hidden_states=encoder_hidden_states,
             encoder_attention_mask=encoder_attention_mask,
             head_mask=head_mask,
@@ -1557,7 +1557,7 @@ class Kosmos2TextForCausalLM(Kosmos2PreTrainedModel):
         self,
         input_ids,
         image_features=None,
-        img_attn_mask=None,
+        image_attn_mask=None,
         past_key_values=None,
         attention_mask=None,
         use_cache=None,
@@ -1573,19 +1573,19 @@ class Kosmos2TextForCausalLM(Kosmos2PreTrainedModel):
             input_ids = input_ids[:, -1:]
             # the image info. is already encoded into the past keys/values
             image_features = None
-            img_attn_mask = None
-        elif img_attn_mask is not None:
-            # appending `False` to `img_attn_mask` (because `input_ids` grows during generation)
+            image_attn_mask = None
+        elif image_attn_mask is not None:
+            # appending `False` to `image_attn_mask` (because `input_ids` grows during generation)
             batch_size, seq_len = input_ids.size()
-            mask_len = img_attn_mask.size()[-1]
-            img_attn_mask = torch.cat(
-                (img_attn_mask, torch.zeros(size=(batch_size, seq_len - mask_len), dtype=torch.bool, device=input_ids.device)), dim=1
+            mask_len = image_attn_mask.size()[-1]
+            image_attn_mask = torch.cat(
+                (image_attn_mask, torch.zeros(size=(batch_size, seq_len - mask_len), dtype=torch.bool, device=input_ids.device)), dim=1
             )
 
         return {
             "input_ids": input_ids,
             "image_features": image_features,
-            "img_attn_mask": img_attn_mask,
+            "image_attn_mask": image_attn_mask,
             "past_key_values": past_key_values,
             "attention_mask": attention_mask,
             "use_cache": use_cache,
@@ -1660,7 +1660,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         self,
         pixel_values: Optional[torch.Tensor] = None,
         input_ids: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
         past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -1700,7 +1700,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             image_features=image_features,
-            img_attn_mask=img_attn_mask,
+            image_attn_mask=image_attn_mask,
             head_mask=head_mask,
             past_key_values=past_key_values,
             inputs_embeds=inputs_embeds,
@@ -1766,7 +1766,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         self,
         pixel_values: Optional[torch.Tensor] = None,
         input_ids: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         head_mask: Optional[torch.Tensor] = None,
         past_key_values: Optional[List[torch.FloatTensor]] = None,
@@ -1805,7 +1805,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         ...     input_ids=inputs["input_ids"][:, :-1],
         ...     attention_mask=inputs["attention_mask"][:, :-1],
         ...     image_features=None,
-        ...     img_attn_mask=inputs["img_attn_mask"][:, :-1],
+        ...     image_attn_mask=inputs["image_attn_mask"][:, :-1],
         ...     use_cache=True,
         ...     max_new_tokens=64,
         ... )
@@ -1839,7 +1839,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             image_features=image_features,
-            img_attn_mask=img_attn_mask,
+            image_attn_mask=image_attn_mask,
             head_mask=head_mask,
             past_key_values=past_key_values,
             inputs_embeds=inputs_embeds,
@@ -1868,7 +1868,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
     def generate(
         self,
         pixel_values: Optional[torch.Tensor] = None,
-        img_attn_mask: Optional[torch.Tensor] = None,
+        image_attn_mask: Optional[torch.Tensor] = None,
         input_ids: Optional[torch.Tensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
         image_features: Optional[torch.Tensor] = None,
@@ -1897,7 +1897,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             input_ids=input_ids,
             attention_mask=attention_mask,
             image_features=image_features,
-            img_attn_mask=img_attn_mask,
+            image_attn_mask=image_attn_mask,
             **kwargs,
         )
 
