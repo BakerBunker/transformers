@@ -1699,8 +1699,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
                 raise ValueError("You have to specify either `pixel_values` or `image_features`.")
 
             vision_model_output = self.vision_model(pixel_values)
-            # HF's CLIP has `last_hidden_state` without going through `post_layernorm`.
-            # Here we need the whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
+            # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
             image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
@@ -1838,8 +1837,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
                 raise ValueError("You have to specify either `pixel_values` or `image_features`.")
 
             vision_model_output = self.vision_model(pixel_values)
-            # HF's CLIP has `last_hidden_state` without going through `post_layernorm`.
-            # Here we need the whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
+            # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
             image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
