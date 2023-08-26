@@ -1639,8 +1639,7 @@ class Kosmos2ImageToTextConnector(nn.Module):
 
 @add_start_docstrings(
     """
-    KOSMOS-2 Model for generating text and image features. The model consists of a vision encoder (CLIP) and a language
-    model.
+    KOSMOS-2 Model for generating text and image features. The model consists of a vision encoder and a language model.
     """,
     KOSMOS2_START_DOCSTRING,
 )
@@ -1736,8 +1735,8 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
 
 @add_start_docstrings(
     """
-    KOSMOS-2 Model for generating text and bounding boxes given an image. The model consists of a vision encoder (CLIP)
-    and a language model.
+    KOSMOS-2 Model for generating text and bounding boxes given an image. The model consists of a vision encoder and a
+    language model.
     """,
     KOSMOS2_START_DOCSTRING,
 )
