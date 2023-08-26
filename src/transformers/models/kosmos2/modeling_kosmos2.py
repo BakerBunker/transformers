@@ -52,9 +52,6 @@ KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST = [
 ]
 
 
-# TODO: def _init_weights
-
-
 # Copied from transformers.models.bart.modeling_bart._expand_mask
 def _expand_mask(mask: torch.Tensor, dtype: torch.dtype, tgt_len: Optional[int] = None):
     """
@@ -1337,6 +1334,15 @@ class Kosmos2PreTrainedModel(PreTrainedModel):
 
     config_class = Kosmos2Config
     supports_gradient_checkpointing = True
+
+    def _init_weights(self, module):
+        """Initialize the weights"""
+        # TODO: Add this
+        pass
+
+    def _set_gradient_checkpointing(self, module, value=False):
+        if isinstance(module, (Kosmos2VisionEncoder, Kosmos2TextTransformer)):
+            module.gradient_checkpointing = value
 
 
 class Kosmos2VisionModel(Kosmos2PreTrainedModel):
