@@ -1894,8 +1894,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
 
         if image_features is None:
             vision_model_output = self.vision_model(pixel_values)
-            # HF's CLIP has `last_hidden_state` without going through `post_layernorm`.
-            # Here we need the whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
+            # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
             image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
