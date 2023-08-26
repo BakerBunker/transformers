@@ -1334,6 +1334,7 @@ class Kosmos2PreTrainedModel(PreTrainedModel):
 
     config_class = Kosmos2Config
     supports_gradient_checkpointing = True
+    _no_split_modules = ["Kosmos2VisionEncoderLayer, Kosmos2TextBlock"]
 
     def _init_weights(self, module):
         """Initialize the weights"""
@@ -1383,8 +1384,6 @@ class Kosmos2VisionModel(Kosmos2PreTrainedModel):
 
 class Kosmos2TextModel(Kosmos2PreTrainedModel):
     config_class = Kosmos2TextConfig
-
-    _no_split_modules = ["Kosmos2TextBlock"]
 
     def __init__(self, config: Kosmos2TextConfig):
         super().__init__(config)
