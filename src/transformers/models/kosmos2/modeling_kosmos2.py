@@ -268,7 +268,7 @@ class Kosmos2ModelOutput(ModelOutput):
             heads.
         image_features (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*, returned when being computed by the model):
             Sequence of hidden-states at the output of `Kosmos2ImageToTextConnector`.
-        image_connector_attention (`tuple(torch.FloatTensor)`, *optional, returned when being computed by the model):
+        image_connector_attentions (`tuple(torch.FloatTensor)`, *optional, returned when being computed by the model):
             Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
             sequence_length)`.
 
@@ -287,12 +287,12 @@ class Kosmos2ModelOutput(ModelOutput):
             input) to speed up sequential decoding.
     """
 
-    last_hidden_states: torch.FloatTensor = None
+    last_hidden_state: torch.FloatTensor = None
     past_key_values: Optional[Tuple[Tuple[torch.FloatTensor]]] = None
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
     image_features: Optional[torch.FloatTensor] = None
-    image_connector_attention: Optional[Tuple[torch.FloatTensor]] = None
+    image_connector_attentions: Optional[Tuple[torch.FloatTensor]] = None
     vision_model_output: BaseModelOutputWithPooling = None
 
 
@@ -319,7 +319,7 @@ class Kosmos2ForConditionalGenerationModelOutput(ModelOutput):
             heads.
         image_features (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*, returned when being computed by the model):
             Sequence of hidden-states at the output of `Kosmos2ImageToTextConnector`.
-        image_connector_attention (`tuple(torch.FloatTensor)`, *optional, returned when being computed by the model):
+        image_connector_attentions (`tuple(torch.FloatTensor)`, *optional, returned when being computed by the model):
             Tuple of `torch.FloatTensor` (one for each layer) of shape `(batch_size, num_heads, sequence_length,
             sequence_length)`.
 
@@ -344,7 +344,7 @@ class Kosmos2ForConditionalGenerationModelOutput(ModelOutput):
     hidden_states: Optional[Tuple[torch.FloatTensor]] = None
     attentions: Optional[Tuple[torch.FloatTensor]] = None
     image_features: Optional[torch.FloatTensor] = None
-    image_connector_attention: Optional[Tuple[torch.FloatTensor]] = None
+    image_connector_attentions: Optional[Tuple[torch.FloatTensor]] = None
     vision_model_output: BaseModelOutputWithPooling = None
 
 
@@ -1681,7 +1681,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         vision_model_output = None
-        image_connector_attention = None
+        image_connector_attentions = None
         if img_features is None:
             if pixel_values is None:
                 raise ValueError("You have to specify either `pixel_values` or `img_features`.")
@@ -1692,7 +1692,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
             img_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             img_features = nn.functional.normalize(img_features, dim=-1)
-            img_features, image_connector_attention = self.image_to_text_connector(img_features)
+            img_features, image_connector_attentions = self.image_to_text_connector(img_features)
 
         outputs = self.text_model(
             input_ids=input_ids,
@@ -1709,16 +1709,16 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            outputs = outputs + (img_features, image_connector_attention, vision_model_output)
+            outputs = outputs + (img_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
         return Kosmos2ModelOutput(
-            last_hidden_states=outputs.last_hidden_state,
+            last_hidden_state=outputs.last_hidden_state,
             past_key_values=outputs.past_key_values,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
             image_features=img_features,
-            image_connector_attention=image_connector_attention,
+            image_connector_attentions=image_connector_attentions,
             vision_model_output=vision_model_output,
         )
 
@@ -1820,7 +1820,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         vision_model_output = None
-        image_connector_attention = None
+        image_connector_attentions = None
         if img_features is None:
             if pixel_values is None:
                 raise ValueError("You have to specify either `pixel_values` or `img_features`.")
@@ -1831,7 +1831,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             img_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             img_features = nn.functional.normalize(img_features, dim=-1)
-            img_features, image_connector_attention = self.image_to_text_connector(img_features)
+            img_features, image_connector_attentions = self.image_to_text_connector(img_features)
 
         lm_outputs = self.text_model(
             input_ids=input_ids,
@@ -1849,7 +1849,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            outputs = lm_outputs + (img_features, image_connector_attention, vision_model_output)
+            outputs = lm_outputs + (img_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
         return Kosmos2ForConditionalGenerationModelOutput(
@@ -1859,7 +1859,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             hidden_states=lm_outputs.hidden_states,
             attentions=lm_outputs.attentions,
             image_features=img_features,
-            image_connector_attention=image_connector_attention,
+            image_connector_attentions=image_connector_attentions,
             vision_model_output=vision_model_output,
         )
 
@@ -1889,7 +1889,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             img_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
             img_features = nn.functional.normalize(img_features, dim=-1)
-            img_features, image_connector_attention = self.image_to_text_connector(img_features)
+            img_features, image_connector_attentions = self.image_to_text_connector(img_features)
 
         output = self.text_model.generate(
             input_ids=input_ids,
