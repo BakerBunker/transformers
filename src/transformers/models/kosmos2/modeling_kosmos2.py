@@ -114,7 +114,7 @@ KOSMOS2_START_DOCSTRING = r"""
     and behavior.
 
     Parameters:
-        config ([`BlipConfig`]): Model configuration class with all the parameters of the model.
+        config ([`Kosmos2Config`]): Model configuration class with all the parameters of the model.
             Initializing with a config file does not load the weights associated with the model, only the
             configuration. Check out the [`~PreTrainedModel.from_pretrained`] method to load the model weights.
 """
@@ -122,7 +122,7 @@ KOSMOS2_START_DOCSTRING = r"""
 KOSMOS2_VISION_INPUTS_DOCSTRING = r"""
     Args:
         pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
-            Pixel values. Pixel values can be obtained using [`Blip2Processor`]. See [`Blip2Processor.__call__`] for
+            Pixel values. Pixel values can be obtained using [`AutoImageProcessor`]. See [`Kosmos2ImageProcessor.__call__`] for
             details.
         output_attentions (`bool`, *optional*):
             Whether or not to return the attentions tensors of all attention layers. See `attentions` under returned
@@ -200,7 +200,9 @@ KOSMOS2_TEXT_INPUTS_DOCSTRING = r"""
 
 KOSMOS2_INPUTS_DOCSTRING = r"""
     Args:
-        pixel_values:
+        pixel_values (`torch.FloatTensor` of shape `(batch_size, num_channels, height, width)`):
+            Pixel values. Pixel values can be obtained using [`AutoImageProcessor`]. See [`Kosmos2ImageProcessor.__call__`] for
+            details.
         input_ids (`torch.LongTensor` of shape `(batch_size, sequence_length)`):
             Indices of input sequence tokens in the vocabulary. Padding will be ignored by default should you provide
             it.
