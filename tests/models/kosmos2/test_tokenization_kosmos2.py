@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright 2020 The HuggingFace Team. All rights reserved.
+# Copyright 2023 Microsoft Research and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,291 +13,333 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-import itertools
-import json
-import os
+import pickle
+import shutil
+import tempfile
 import unittest
 
-from transformers import AddedToken, RobertaTokenizer, RobertaTokenizerFast
-from transformers.models.roberta.tokenization_roberta import VOCAB_FILES_NAMES
-from transformers.testing_utils import require_tokenizers, slow
+from transformers import SPIECE_UNDERLINE, XLMRobertaTokenizer, XLMRobertaTokenizerFast
+from transformers.testing_utils import get_tests_dir, require_sentencepiece, require_tokenizers, slow
+from transformers.utils import cached_property
 
 from ...test_tokenization_common import TokenizerTesterMixin
 
 
+SAMPLE_VOCAB = get_tests_dir("fixtures/test_sentencepiece.model")
+
+
+@require_sentencepiece
 @require_tokenizers
-class RobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
-    tokenizer_class = RobertaTokenizer
-    rust_tokenizer_class = RobertaTokenizerFast
+class XLMRobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
+    tokenizer_class = XLMRobertaTokenizer
+    rust_tokenizer_class = XLMRobertaTokenizerFast
     test_rust_tokenizer = True
-    from_pretrained_kwargs = {"cls_token": "<s>"}
+    test_sentencepiece = True
 
     def setUp(self):
         super().setUp()
 
-        # Adapted from Sennrich et al. 2015 and https://github.com/rsennrich/subword-nmt
-        vocab = [
-            "l",
-            "o",
-            "w",
-            "e",
-            "r",
-            "s",
-            "t",
-            "i",
-            "d",
-            "n",
-            "\u0120",
-            "\u0120l",
-            "\u0120n",
-            "\u0120lo",
-            "\u0120low",
-            "er",
-            "\u0120lowest",
-            "\u0120newer",
-            "\u0120wider",
-            "<unk>",
-        ]
-        vocab_tokens = dict(zip(vocab, range(len(vocab))))
-        merges = ["#version: 0.2", "\u0120 l", "\u0120l o", "\u0120lo w", "e r", ""]
-        self.special_tokens_map = {"unk_token": "<unk>"}
+        # We have a SentencePiece fixture for testing
+        tokenizer = XLMRobertaTokenizer(SAMPLE_VOCAB, keep_accents=True)
+        tokenizer.save_pretrained(self.tmpdirname)
 
-        self.vocab_file = os.path.join(self.tmpdirname, VOCAB_FILES_NAMES["vocab_file"])
-        self.merges_file = os.path.join(self.tmpdirname, VOCAB_FILES_NAMES["merges_file"])
-        with open(self.vocab_file, "w", encoding="utf-8") as fp:
-            fp.write(json.dumps(vocab_tokens) + "\n")
-        with open(self.merges_file, "w", encoding="utf-8") as fp:
-            fp.write("\n".join(merges))
+    def test_convert_token_and_id(self):
+        """Test ``_convert_token_to_id`` and ``_convert_id_to_token``."""
+        token = "<pad>"
+        token_id = 1
 
-    def get_tokenizer(self, **kwargs):
-        kwargs.update(self.special_tokens_map)
-        return self.tokenizer_class.from_pretrained(self.tmpdirname, **kwargs)
+        self.assertEqual(self.get_tokenizer()._convert_token_to_id(token), token_id)
+        self.assertEqual(self.get_tokenizer()._convert_id_to_token(token_id), token)
 
-    def get_rust_tokenizer(self, **kwargs):
-        kwargs.update(self.special_tokens_map)
-        return RobertaTokenizerFast.from_pretrained(self.tmpdirname, **kwargs)
+    def test_get_vocab(self):
+        vocab_keys = list(self.get_tokenizer().get_vocab().keys())
 
-    def get_input_output_texts(self, tokenizer):
-        input_text = "lower newer"
-        output_text = "lower newer"
-        return input_text, output_text
+        self.assertEqual(vocab_keys[0], "<s>")
+        self.assertEqual(vocab_keys[1], "<pad>")
+        self.assertEqual(vocab_keys[-1], "<mask>")
+        self.assertEqual(len(vocab_keys), 1_002)
+
+    def test_vocab_size(self):
+        self.assertEqual(self.get_tokenizer().vocab_size, 1_002)
 
     def test_full_tokenizer(self):
-        tokenizer = self.tokenizer_class(self.vocab_file, self.merges_file, **self.special_tokens_map)
-        text = "lower newer"
-        bpe_tokens = ["l", "o", "w", "er", "\u0120", "n", "e", "w", "er"]
-        tokens = tokenizer.tokenize(text)  # , add_prefix_space=True)
-        self.assertListEqual(tokens, bpe_tokens)
+        tokenizer = XLMRobertaTokenizer(SAMPLE_VOCAB, keep_accents=True)
 
-        input_tokens = tokens + [tokenizer.unk_token]
-        input_bpe_tokens = [0, 1, 2, 15, 10, 9, 3, 2, 15, 19]
-        self.assertListEqual(tokenizer.convert_tokens_to_ids(input_tokens), input_bpe_tokens)
+        tokens = tokenizer.tokenize("This is a test")
+        self.assertListEqual(tokens, ["▁This", "▁is", "▁a", "▁t", "est"])
 
-    def roberta_dict_integration_testing(self):
-        tokenizer = self.get_tokenizer()
-
-        self.assertListEqual(tokenizer.encode("Hello world!", add_special_tokens=False), [0, 31414, 232, 328, 2])
         self.assertListEqual(
-            tokenizer.encode("Hello world! cécé herlolip 418", add_special_tokens=False),
-            [0, 31414, 232, 328, 740, 1140, 12695, 69, 46078, 1588, 2],
+            tokenizer.convert_tokens_to_ids(tokens),
+            [value + tokenizer.fairseq_offset for value in [285, 46, 10, 170, 382]],
         )
 
-    @slow
-    def test_sequence_builders(self):
-        tokenizer = self.tokenizer_class.from_pretrained("roberta-base")
-
-        text = tokenizer.encode("sequence builders", add_special_tokens=False)
-        text_2 = tokenizer.encode("multi-sequence build", add_special_tokens=False)
-
-        encoded_text_from_decode = tokenizer.encode(
-            "sequence builders", add_special_tokens=True, add_prefix_space=False
+        tokens = tokenizer.tokenize("I was born in 92000, and this is falsé.")
+        self.assertListEqual(
+            tokens,
+            [
+                SPIECE_UNDERLINE + "I",
+                SPIECE_UNDERLINE + "was",
+                SPIECE_UNDERLINE + "b",
+                "or",
+                "n",
+                SPIECE_UNDERLINE + "in",
+                SPIECE_UNDERLINE + "",
+                "9",
+                "2",
+                "0",
+                "0",
+                "0",
+                ",",
+                SPIECE_UNDERLINE + "and",
+                SPIECE_UNDERLINE + "this",
+                SPIECE_UNDERLINE + "is",
+                SPIECE_UNDERLINE + "f",
+                "al",
+                "s",
+                "é",
+                ".",
+            ],
         )
-        encoded_pair_from_decode = tokenizer.encode(
-            "sequence builders", "multi-sequence build", add_special_tokens=True, add_prefix_space=False
+        ids = tokenizer.convert_tokens_to_ids(tokens)
+        self.assertListEqual(
+            ids,
+            [
+                value + tokenizer.fairseq_offset
+                for value in [8, 21, 84, 55, 24, 19, 7, 2, 602, 347, 347, 347, 3, 12, 66, 46, 72, 80, 6, 2, 4]
+                #                                       ^ unk: 2 + 1 = 3                  unk: 2 + 1 = 3 ^
+            ],
         )
 
-        encoded_sentence = tokenizer.build_inputs_with_special_tokens(text)
-        encoded_pair = tokenizer.build_inputs_with_special_tokens(text, text_2)
+        back_tokens = tokenizer.convert_ids_to_tokens(ids)
+        self.assertListEqual(
+            back_tokens,
+            [
+                SPIECE_UNDERLINE + "I",
+                SPIECE_UNDERLINE + "was",
+                SPIECE_UNDERLINE + "b",
+                "or",
+                "n",
+                SPIECE_UNDERLINE + "in",
+                SPIECE_UNDERLINE + "",
+                "<unk>",
+                "2",
+                "0",
+                "0",
+                "0",
+                ",",
+                SPIECE_UNDERLINE + "and",
+                SPIECE_UNDERLINE + "this",
+                SPIECE_UNDERLINE + "is",
+                SPIECE_UNDERLINE + "f",
+                "al",
+                "s",
+                "<unk>",
+                ".",
+            ],
+        )
 
-        assert encoded_sentence == encoded_text_from_decode
-        assert encoded_pair == encoded_pair_from_decode
+    # overwrite from test_tokenization_common to speed up test
+    def test_save_pretrained(self):
+        if not self.test_slow_tokenizer:
+            # as we don't have a slow version, we can't compare the outputs between slow and fast versions
+            return
 
-    def test_space_encoding(self):
-        tokenizer = self.get_tokenizer()
-
-        sequence = "Encode this sequence."
-        space_encoding = tokenizer.byte_encoder[" ".encode("utf-8")[0]]
-
-        # Testing encoder arguments
-        encoded = tokenizer.encode(sequence, add_special_tokens=False, add_prefix_space=False)
-        first_char = tokenizer.convert_ids_to_tokens(encoded[0])[0]
-        self.assertNotEqual(first_char, space_encoding)
-
-        encoded = tokenizer.encode(sequence, add_special_tokens=False, add_prefix_space=True)
-        first_char = tokenizer.convert_ids_to_tokens(encoded[0])[0]
-        self.assertEqual(first_char, space_encoding)
-
-        tokenizer.add_special_tokens({"bos_token": "<s>"})
-        encoded = tokenizer.encode(sequence, add_special_tokens=True)
-        first_char = tokenizer.convert_ids_to_tokens(encoded[1])[0]
-        self.assertNotEqual(first_char, space_encoding)
-
-        # Testing spaces after special tokens
-        mask = "<mask>"
-        tokenizer.add_special_tokens(
-            {"mask_token": AddedToken(mask, lstrip=True, rstrip=False)}
-        )  # mask token has a left space
-        mask_ind = tokenizer.convert_tokens_to_ids(mask)
-
-        sequence = "Encode <mask> sequence"
-        sequence_nospace = "Encode <mask>sequence"
-
-        encoded = tokenizer.encode(sequence)
-        mask_loc = encoded.index(mask_ind)
-        first_char = tokenizer.convert_ids_to_tokens(encoded[mask_loc + 1])[0]
-        self.assertEqual(first_char, space_encoding)
-
-        encoded = tokenizer.encode(sequence_nospace)
-        mask_loc = encoded.index(mask_ind)
-        first_char = tokenizer.convert_ids_to_tokens(encoded[mask_loc + 1])[0]
-        self.assertNotEqual(first_char, space_encoding)
-
-    def test_pretokenized_inputs(self):
-        pass
-
-    def test_embeded_special_tokens(self):
+        self.tokenizers_list[0] = (self.rust_tokenizer_class, "hf-internal-testing/tiny-xlm-roberta", {})
         for tokenizer, pretrained_name, kwargs in self.tokenizers_list:
             with self.subTest(f"{tokenizer.__class__.__name__} ({pretrained_name})"):
                 tokenizer_r = self.rust_tokenizer_class.from_pretrained(pretrained_name, **kwargs)
                 tokenizer_p = self.tokenizer_class.from_pretrained(pretrained_name, **kwargs)
-                sentence = "A, <mask> AllenNLP sentence."
-                tokens_r = tokenizer_r.encode_plus(sentence, add_special_tokens=True, return_token_type_ids=True)
-                tokens_p = tokenizer_p.encode_plus(sentence, add_special_tokens=True, return_token_type_ids=True)
 
-                # token_type_ids should put 0 everywhere
-                self.assertEqual(sum(tokens_r["token_type_ids"]), sum(tokens_p["token_type_ids"]))
+                tmpdirname2 = tempfile.mkdtemp()
 
-                # attention_mask should put 1 everywhere, so sum over length should be 1
-                self.assertEqual(
-                    sum(tokens_r["attention_mask"]) / len(tokens_r["attention_mask"]),
-                    sum(tokens_p["attention_mask"]) / len(tokens_p["attention_mask"]),
-                )
+                tokenizer_r_files = tokenizer_r.save_pretrained(tmpdirname2)
+                tokenizer_p_files = tokenizer_p.save_pretrained(tmpdirname2)
 
-                tokens_r_str = tokenizer_r.convert_ids_to_tokens(tokens_r["input_ids"])
-                tokens_p_str = tokenizer_p.convert_ids_to_tokens(tokens_p["input_ids"])
+                # Checks it save with the same files + the tokenizer.json file for the fast one
+                self.assertTrue(any("tokenizer.json" in f for f in tokenizer_r_files))
+                tokenizer_r_files = tuple(f for f in tokenizer_r_files if "tokenizer.json" not in f)
+                self.assertSequenceEqual(tokenizer_r_files, tokenizer_p_files)
 
-                # Rust correctly handles the space before the mask while python doesnt
-                self.assertSequenceEqual(tokens_p["input_ids"], [0, 250, 6, 50264, 3823, 487, 21992, 3645, 4, 2])
-                self.assertSequenceEqual(tokens_r["input_ids"], [0, 250, 6, 50264, 3823, 487, 21992, 3645, 4, 2])
+                # Checks everything loads correctly in the same way
+                tokenizer_rp = tokenizer_r.from_pretrained(tmpdirname2)
+                tokenizer_pp = tokenizer_p.from_pretrained(tmpdirname2)
 
-                self.assertSequenceEqual(
-                    tokens_p_str, ["<s>", "A", ",", "<mask>", "ĠAllen", "N", "LP", "Ġsentence", ".", "</s>"]
-                )
-                self.assertSequenceEqual(
-                    tokens_r_str, ["<s>", "A", ",", "<mask>", "ĠAllen", "N", "LP", "Ġsentence", ".", "</s>"]
-                )
+                # Check special tokens are set accordingly on Rust and Python
+                for key in tokenizer_pp.special_tokens_map:
+                    self.assertTrue(hasattr(tokenizer_rp, key))
+                    # self.assertEqual(getattr(tokenizer_rp, key), getattr(tokenizer_pp, key))
+                    # self.assertEqual(getattr(tokenizer_rp, key + "_id"), getattr(tokenizer_pp, key + "_id"))
 
-    def test_change_add_prefix_space_and_trim_offsets_args(self):
-        for trim_offsets, add_prefix_space in itertools.product([True, False], repeat=2):
-            tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                self.tmpdirname, use_fast=True, add_prefix_space=add_prefix_space, trim_offsets=trim_offsets
-            )
+                shutil.rmtree(tmpdirname2)
 
-            pre_tokenizer_state = json.loads(tokenizer_r.backend_tokenizer.pre_tokenizer.__getstate__())
-            post_processor_state = json.loads(tokenizer_r.backend_tokenizer.post_processor.__getstate__())
+                # Save tokenizer rust, legacy_format=True
+                tmpdirname2 = tempfile.mkdtemp()
 
-            self.assertEqual(pre_tokenizer_state["add_prefix_space"], add_prefix_space)
+                tokenizer_r_files = tokenizer_r.save_pretrained(tmpdirname2, legacy_format=True)
+                tokenizer_p_files = tokenizer_p.save_pretrained(tmpdirname2)
 
-            self.assertEqual(post_processor_state["add_prefix_space"], add_prefix_space)
-            self.assertEqual(post_processor_state["trim_offsets"], trim_offsets)
+                # Checks it save with the same files
+                self.assertSequenceEqual(tokenizer_r_files, tokenizer_p_files)
 
-    def test_offsets_mapping_with_different_add_prefix_space_and_trim_space_arguments(self):
-        # Test which aims to verify that the offsets are well adapted to the argument `add_prefix_space` and
-        # `trim_offsets`
-        for tokenizer, pretrained_name, kwargs in self.tokenizers_list:
-            with self.subTest(f"{tokenizer.__class__.__name__} ({pretrained_name})"):
-                text_of_1_token = "hello"  # `hello` is a token in the vocabulary of `pretrained_name`
-                text = f"{text_of_1_token} {text_of_1_token}"
+                # Checks everything loads correctly in the same way
+                tokenizer_rp = tokenizer_r.from_pretrained(tmpdirname2)
+                tokenizer_pp = tokenizer_p.from_pretrained(tmpdirname2)
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=True, trim_offsets=True
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (len(text_of_1_token) + 1, len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                # Check special tokens are set accordingly on Rust and Python
+                for key in tokenizer_pp.special_tokens_map:
+                    self.assertTrue(hasattr(tokenizer_rp, key))
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=False, trim_offsets=True
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (len(text_of_1_token) + 1, len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                shutil.rmtree(tmpdirname2)
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=True, trim_offsets=False
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (len(text_of_1_token), len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                # Save tokenizer rust, legacy_format=False
+                tmpdirname2 = tempfile.mkdtemp()
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=False, trim_offsets=False
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (len(text_of_1_token), len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                tokenizer_r_files = tokenizer_r.save_pretrained(tmpdirname2, legacy_format=False)
+                tokenizer_p_files = tokenizer_p.save_pretrained(tmpdirname2)
 
-                text = f" {text}"
+                # Checks it saved the tokenizer.json file
+                self.assertTrue(any("tokenizer.json" in f for f in tokenizer_r_files))
 
-                # tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                #     pretrained_name, use_fast=True, add_prefix_space=True, trim_offsets=True
-                # )
-                # encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                # self.assertEqual(encoding.offset_mapping[0], (1, 1 + len(text_of_1_token)))
-                # self.assertEqual(
-                #     encoding.offset_mapping[1],
-                #     (1 + len(text_of_1_token) + 1, 1 + len(text_of_1_token) + 1 + len(text_of_1_token)),
-                # )
+                # Checks everything loads correctly in the same way
+                tokenizer_rp = tokenizer_r.from_pretrained(tmpdirname2)
+                tokenizer_pp = tokenizer_p.from_pretrained(tmpdirname2)
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=False, trim_offsets=True
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (1, 1 + len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (1 + len(text_of_1_token) + 1, 1 + len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                # Check special tokens are set accordingly on Rust and Python
+                for key in tokenizer_pp.special_tokens_map:
+                    self.assertTrue(hasattr(tokenizer_rp, key))
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=True, trim_offsets=False
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, 1 + len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (1 + len(text_of_1_token), 1 + len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+                shutil.rmtree(tmpdirname2)
 
-                tokenizer_r = self.rust_tokenizer_class.from_pretrained(
-                    pretrained_name, use_fast=True, add_prefix_space=False, trim_offsets=False
-                )
-                encoding = tokenizer_r(text, return_offsets_mapping=True, add_special_tokens=False)
-                self.assertEqual(encoding.offset_mapping[0], (0, 1 + len(text_of_1_token)))
-                self.assertEqual(
-                    encoding.offset_mapping[1],
-                    (1 + len(text_of_1_token), 1 + len(text_of_1_token) + 1 + len(text_of_1_token)),
-                )
+    @cached_property
+    def big_tokenizer(self):
+        return XLMRobertaTokenizer.from_pretrained("xlm-roberta-base")
+
+    def test_picklable_without_disk(self):
+        with tempfile.NamedTemporaryFile() as f:
+            shutil.copyfile(SAMPLE_VOCAB, f.name)
+            tokenizer = XLMRobertaTokenizer(f.name, keep_accents=True)
+            pickled_tokenizer = pickle.dumps(tokenizer)
+        pickle.loads(pickled_tokenizer)
+
+    def test_rust_and_python_full_tokenizers(self):
+        if not self.test_rust_tokenizer:
+            return
+
+        tokenizer = self.get_tokenizer()
+        rust_tokenizer = self.get_rust_tokenizer()
+
+        sequence = "I was born in 92000, and this is falsé."
+
+        tokens = tokenizer.tokenize(sequence)
+        rust_tokens = rust_tokenizer.tokenize(sequence)
+        self.assertListEqual(tokens, rust_tokens)
+
+        ids = tokenizer.encode(sequence, add_special_tokens=False)
+        rust_ids = rust_tokenizer.encode(sequence, add_special_tokens=False)
+        self.assertListEqual(ids, rust_ids)
+
+        rust_tokenizer = self.get_rust_tokenizer()
+        ids = tokenizer.encode(sequence)
+        rust_ids = rust_tokenizer.encode(sequence)
+        self.assertListEqual(ids, rust_ids)
+
+    @slow
+    def test_tokenization_base_easy_symbols(self):
+        symbols = "Hello World!"
+        original_tokenizer_encodings = [0, 35378, 6661, 38, 2]
+        # xlmr = torch.hub.load('pytorch/fairseq', 'xlmr.base')  # xlmr.large has same tokenizer
+        # xlmr.eval()
+        # xlmr.encode(symbols)
+
+        self.assertListEqual(original_tokenizer_encodings, self.big_tokenizer.encode(symbols))
+
+    @slow
+    def test_tokenization_base_hard_symbols(self):
+        symbols = (
+            'This is a very long text with a lot of weird characters, such as: . , ~ ? ( ) " [ ] ! : - . Also we will'
+            " add words that should not exsist and be tokenized to <unk>, such as saoneuhaoesuth"
+        )
+        original_tokenizer_encodings = [
+            0,
+            3293,
+            83,
+            10,
+            4552,
+            4989,
+            7986,
+            678,
+            10,
+            5915,
+            111,
+            179459,
+            124850,
+            4,
+            6044,
+            237,
+            12,
+            6,
+            5,
+            6,
+            4,
+            6780,
+            705,
+            15,
+            1388,
+            44,
+            378,
+            10114,
+            711,
+            152,
+            20,
+            6,
+            5,
+            22376,
+            642,
+            1221,
+            15190,
+            34153,
+            450,
+            5608,
+            959,
+            1119,
+            57702,
+            136,
+            186,
+            47,
+            1098,
+            29367,
+            47,
+            # 4426, # What fairseq tokenizes from "<unk>": "_<"
+            # 3678, # What fairseq tokenizes from "<unk>": "unk"
+            # 2740, # What fairseq tokenizes from "<unk>": ">"
+            3,  # What we tokenize from "<unk>": "<unk>"
+            6,  # Residue from the tokenization: an extra sentencepiece underline
+            4,
+            6044,
+            237,
+            6284,
+            50901,
+            528,
+            31,
+            90,
+            34,
+            927,
+            2,
+        ]
+        # xlmr = torch.hub.load('pytorch/fairseq', 'xlmr.base')  # xlmr.large has same tokenizer
+        # xlmr.eval()
+        # xlmr.encode(symbols)
+
+        self.assertListEqual(original_tokenizer_encodings, self.big_tokenizer.encode(symbols))
+
+    @slow
+    def test_tokenizer_integration(self):
+        # fmt: off
+        expected_encoding = {'input_ids': [[0, 11062, 82772, 7, 15, 82772, 538, 51529, 237, 17198, 1290, 206, 9, 215175, 1314, 136, 17198, 1290, 206, 9, 56359, 42, 122009, 9, 16466, 16, 87344, 4537, 9, 4717, 78381, 6, 159958, 7, 15, 24480, 618, 4, 527, 22693, 5428, 4, 2777, 24480, 9874, 4, 43523, 594, 4, 803, 18392, 33189, 18, 4, 43523, 24447, 12399, 100, 24955, 83658, 9626, 144057, 15, 839, 22335, 16, 136, 24955, 83658, 83479, 15, 39102, 724, 16, 678, 645, 2789, 1328, 4589, 42, 122009, 115774, 23, 805, 1328, 46876, 7, 136, 53894, 1940, 42227, 41159, 17721, 823, 425, 4, 27512, 98722, 206, 136, 5531, 4970, 919, 17336, 5, 2], [0, 20080, 618, 83, 82775, 47, 479, 9, 1517, 73, 53894, 333, 80581, 110117, 18811, 5256, 1295, 51, 152526, 297, 7986, 390, 124416, 538, 35431, 214, 98, 15044, 25737, 136, 7108, 43701, 23, 756, 135355, 7, 5, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [0, 581, 63773, 119455, 6, 147797, 88203, 7, 645, 70, 21, 3285, 10269, 5, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]], 'attention_mask': [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]]}  # noqa: E501
+        # fmt: on
+
+        self.tokenizer_integration_test_util(
+            expected_encoding=expected_encoding,
+            model_name="xlm-roberta-base",
+            revision="d9d8a8ea5eb94b1c6654ae9249df7793cd2933d3",
+        )
