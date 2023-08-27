@@ -117,5 +117,5 @@ class Kosmos2ImageProcessingTest(ImageProcessingTestMixin, unittest.TestCase):
         self.assertEqual(image_processor.crop_size, {"height": 18, "width": 18})
 
         image_processor = self.image_processing_class.from_dict(self.image_processor_dict, size=42, crop_size=84)
-        self.assertEqual(image_processor.size, {"shortest_edge": 42})
+        self.assertEqual(image_processor.size, {"height": 42, "width": 42}
         self.assertEqual(image_processor.crop_size, {"height": 84, "width": 84})
