@@ -1574,3 +1574,28 @@ if __name__ == "__main__":
     check_real_model_with_snowman_detail_sample_end_to_end()
 
     # ================================================================================
+
+# # TODO:
+#
+# check: 6c811a32 new model: IDEFICS via HuggingFaceM4 (#24796)
+#
+#
+#
+# docs/source/en/_toctree.yml
+# docs/source/en/index.md
+# docs/source/en/model_doc/idefics.md
+#
+# src/transformers/utils/dummy_pt_objects.py
+# src/transformers/utils/dummy_vision_objects.py
+#
+# README.md
+#
+# README_es.md
+# README_hd.md
+# README_ja.md
+# README_ko.md
+# README_zh-hans.md
+# README_zh-hant.md
+#
+#
+# utils/check_config_attributes.py
