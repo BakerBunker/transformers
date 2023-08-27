@@ -135,7 +135,7 @@ class Kosmos2Processor(ProcessorMixin):
             if first_image_token_id is None:
                 first_image_token_id = self.tokenizer.unk_token_id + 1
 
-            # To see if we need one more `0` (for `<s>`) at the beginning of `img_attn_mask`.
+            # To see if we need one more `0` (for `<s>`) at the beginning of `image_features_mask`.
             with_bos = add_special_tokens
 
             # The first (actual) `<image>` token is always at the 1st or 2nd place (after `<s>` if any). Here we look
@@ -150,43 +150,43 @@ class Kosmos2Processor(ProcessorMixin):
                 )
 
                 batch_size, seq_len = input_ids.shape[:2]
-                img_attn_mask = []
+                image_features_mask = []
                 if with_bos:
                     # for `<s>`
-                    img_attn_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
+                    image_features_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
                 # for `<image>` (the real one)
-                img_attn_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
+                image_features_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
                 # for image tokens
-                img_attn_mask.append(np.ones(shape=(batch_size, 64), dtype=np.int64))
+                image_features_mask.append(np.ones(shape=(batch_size, 64), dtype=np.int64))
                 # for `</image>`
-                img_attn_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
+                image_features_mask.append(np.zeros(shape=(batch_size, 1), dtype=np.int64))
                 # trailing part (which are not related to the image)
                 seq_len -= int(with_bos) + 1 + num_image_tokens + 1
-                img_attn_mask.append(np.zeros(shape=(batch_size, seq_len), dtype=np.int64))
+                image_features_mask.append(np.zeros(shape=(batch_size, seq_len), dtype=np.int64))
 
                 # concatenate along the sequence dimension
-                img_attn_mask = np.concatenate(img_attn_mask, axis=1)
+                image_features_mask = np.concatenate(image_features_mask, axis=1)
 
                 # to the target tensor type
                 if return_tensors == "pt":
                     input_ids = torch.from_numpy(input_ids)
-                    img_attn_mask = torch.from_numpy(img_attn_mask)
+                    image_features_mask = torch.from_numpy(image_features_mask)
                 elif return_tensors == "tf":
                     input_ids = tf.convert_to_tensor(input_ids)
-                    img_attn_mask = tf.convert_to_tensor(img_attn_mask)
+                    image_features_mask = tf.convert_to_tensor(image_features_mask)
 
                 encoding["input_ids"] = input_ids
-                encoding["img_attn_mask"] = img_attn_mask
+                encoding["image_features_mask"] = image_features_mask
 
             else:
-                # Add `img_attn_mask`: the leading and trailing `0` are for `boi` and `eoi` tokens. The `1` indicates
+                # Add `image_features_mask`: the leading and trailing `0` are for `boi` and `eoi` tokens. The `1` indicates
                 # the places of image tokens.
                 image_token_ids = list(range(first_image_token_id, first_image_token_id + num_image_tokens))
-                base_img_attn_mask = [0] + [1] * num_image_tokens + [0]
+                base_image_features_mask = [0] + [1] * num_image_tokens + [0]
 
                 # loop over `encoding["input_ids"]`
                 input_ids = []
-                img_attn_mask = []
+                image_features_mask = []
                 all_input_ids = encoding["input_ids"]
                 # not batched -> (changed to) batch of size 1
                 if isinstance(text, str):
@@ -196,21 +196,21 @@ class Kosmos2Processor(ProcessorMixin):
                     text_ids = text_ids[:start_index] + image_token_ids + text_ids[start_index + num_image_tokens :]
                     input_ids.append(text_ids)
 
-                    mask = copy.copy(base_img_attn_mask)
+                    mask = copy.copy(base_image_features_mask)
                     if with_bos:
                         # for `<s>`
                         mask = [0] + mask
                     # trailing part (which are not related to the image)
                     mask += [0] * (len(text_ids) - len(mask))
-                    img_attn_mask.append(mask)
+                    image_features_mask.append(mask)
 
                 # un-batch if necessary
                 if isinstance(text, str):
                     input_ids = input_ids[0]
-                    img_attn_mask = img_attn_mask[0]
+                    image_features_mask = image_features_mask[0]
 
                 encoding["input_ids"] = input_ids
-                encoding["img_attn_mask"] = img_attn_mask
+                encoding["image_features_mask"] = image_features_mask
 
         return encoding
 
