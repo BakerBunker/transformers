@@ -130,7 +130,6 @@ class Kosmos2Tokenizer(PreTrainedTokenizer):
         pad_token="<pad>",
         mask_token="<mask>",
         num_patch_index_tokens=1024,
-        add_tag_and_patch_index_tokens=False,
         sp_model_kwargs: Optional[Dict[str, Any]] = None,
         **kwargs,
     ) -> None:
@@ -148,6 +147,8 @@ class Kosmos2Tokenizer(PreTrainedTokenizer):
             pad_token=pad_token,
             mask_token=mask_token,
             sp_model_kwargs=self.sp_model_kwargs,
+            num_patch_index_tokens=num_patch_index_tokens,
+            tag_and_patch_index_tokens_already_built=True,
             **kwargs,
         )
 
@@ -205,7 +206,7 @@ class Kosmos2Tokenizer(PreTrainedTokenizer):
         self.num_patch_index_tokens = num_patch_index_tokens
         patch_index_tokens = [f"<patch_index_{str(x).zfill(4)}>" for x in range(self.num_patch_index_tokens)]
 
-        if add_tag_and_patch_index_tokens:
+        if not kwargs.get("tag_and_patch_index_tokens_already_built", False):
             for idx, token in enumerate(self.tag_tokens + patch_index_tokens):
                 self.add_tokens(AddedToken(token, lstrip=True, rstrip=False))
 
