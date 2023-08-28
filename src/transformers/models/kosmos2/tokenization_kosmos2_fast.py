@@ -36,12 +36,12 @@ VOCAB_FILES_NAMES = {"vocab_file": "sentencepiece.bpe.model", "tokenizer_file": 
 
 PRETRAINED_VOCAB_FILES_MAP = {
     "vocab_file": {
-        "microsoft/kosmos-2-patch14-224": "https://huggingface.co/microsoft/kosmos-2-patch14-224/resolve/main/sentencepiece.bpe.model",
+        "ydshieh/temp-testing-kosmos-2": "https://huggingface.co/ydshieh/temp-testing-kosmos-2/resolve/main/sentencepiece.bpe.model",
     }
 }
 
 PRETRAINED_POSITIONAL_EMBEDDINGS_SIZES = {
-    "microsoft/kosmos-2-patch14-224": 2048,
+    "ydshieh/temp-testing-kosmos-2": 2048,
 }
 
 

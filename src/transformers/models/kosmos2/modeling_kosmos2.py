@@ -47,7 +47,7 @@ logger = logging.get_logger(__name__)
 _CONFIG_FOR_DOC = Kosmos2Config
 
 KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST = [
-    "microsoft/kosmos-2-patch14-224",
+    "ydshieh/temp-testing-kosmos-2",
     # See all KOSMOS-2 models at https://huggingface.co/models?filter=kosmos-2
 ]
 

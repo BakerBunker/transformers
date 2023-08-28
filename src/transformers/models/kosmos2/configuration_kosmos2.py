@@ -25,8 +25,8 @@ from ...utils import logging
 logger = logging.get_logger(__name__)
 
 KOSMOS2_PRETRAINED_CONFIG_ARCHIVE_MAP = {
-    "microsoft/kosmos-2-patch14-224": (
-        "https://huggingface.co/microsoft/kosmos-2-patch14-224/resolve/main/config.json"
+    "ydshieh/temp-testing-kosmos-2": (
+        "https://huggingface.co/ydshieh/temp-testing-kosmos-2/resolve/main/config.json"
     ),
     # See all KOSMOS-2 models at https://huggingface.co/models?filter=kosmos-2
 }
@@ -37,7 +37,7 @@ class Kosmos2TextConfig(PretrainedConfig):
     This is the configuration class to store the configuration of a [`Kosmos2TextModel`]. It is used to instantiate a KOSMOS-2 text decoder
     according to the specified arguments, defining the model architecture. Instantiating a configuration with the
     defaults will yield a similar configuration to that of the text decoder of the KOSMOS-2
-    [microsoft/kosmos-2-patch14-224](https://huggingface.co/microsoft/kosmos-2-patch14-224) architecture.
+    [ydshieh/temp-testing-kosmos-2](https://huggingface.co/ydshieh/temp-testing-kosmos-2) architecture.
 
     Configuration objects inherit from [`PretrainedConfig`] and can be used to control the model outputs. Read the
     documentation from [`PretrainedConfig`] for more information.
@@ -81,10 +81,10 @@ class Kosmos2TextConfig(PretrainedConfig):
     ```python
     >>> from transformers import Kosmos2TextConfig, Kosmos2TextModel
 
-    >>> # Initializing a Kosmos2TextConfig microsoft/kosmos-2-patch14-224 style configuration
+    >>> # Initializing a Kosmos2TextConfig ydshieh/temp-testing-kosmos-2 style configuration
     >>> configuration = Kosmos2TextConfig()
 
-    >>> # Initializing a Kosmos2TextModel (with random weights) from the microsoft/kosmos-2-patch14-224 style configuration
+    >>> # Initializing a Kosmos2TextModel (with random weights) from the ydshieh/temp-testing-kosmos-2 style configuration
     >>> model = Kosmos2TextModel(configuration)
 
     >>> # Accessing the model configuration
@@ -161,7 +161,7 @@ class Kosmos2VisionConfig(PretrainedConfig):
     This is the configuration class to store the configuration of a [`Kosmos2VisionModel`]. It is used to instantiate a
     KOSMOS-2 vision encoder according to the specified arguments, defining the model architecture. Instantiating a
     configuration with the defaults will yield a similar configuration to that of the vision encoder of the KOSMOS-2
-    [microsoft/kosmos-2-patch14-224](https://huggingface.co/microsoft/kosmos-2-patch14-224) architecture.
+    [ydshieh/temp-testing-kosmos-2](https://huggingface.co/ydshieh/temp-testing-kosmos-2) architecture.
 
     Configuration objects inherit from [`PretrainedConfig`] and can be used to control the model outputs. Read the
     documentation from [`PretrainedConfig`] for more information.
@@ -197,10 +197,10 @@ class Kosmos2VisionConfig(PretrainedConfig):
     ```python
     >>> from transformers import Kosmos2VisionConfig, Kosmos2VisionModel
 
-    >>> # Initializing a Kosmos2VisionConfig with microsoft/kosmos-2-patch14-224 style configuration
+    >>> # Initializing a Kosmos2VisionConfig with ydshieh/temp-testing-kosmos-2 style configuration
     >>> configuration = Kosmos2VisionConfig()
 
-    >>> # Initializing a Kosmos2VisionModel (with random weights) from the microsoft/kosmos-2-patch14-224 style configuration
+    >>> # Initializing a Kosmos2VisionModel (with random weights) from the ydshieh/temp-testing-kosmos-2 style configuration
     >>> model = Kosmos2VisionModel(configuration)
 
     >>> # Accessing the model configuration
@@ -266,7 +266,7 @@ class Kosmos2Config(PretrainedConfig):
     This is the configuration class to store the configuration of a [`Kosmos2Model`]. It is used to instantiate a KOSMOS-2
     model according to the specified arguments, defining the model architecture. Instantiating a configuration with the
     defaults will yield a similar configuration to that of the KOSMOS-2
-    [microsoft/kosmos-2-patch14-224](https://huggingface.co/microsoft/kosmos-2-patch14-224) architecture.
+    [ydshieh/temp-testing-kosmos-2](https://huggingface.co/ydshieh/temp-testing-kosmos-2) architecture.
 
     Args:
         text_config (`dict`, *optional*):
