@@ -18,7 +18,7 @@ import shutil
 import tempfile
 import unittest
 
-from transformers import SPIECE_UNDERLINE, XLMRobertaTokenizer, XLMRobertaTokenizerFast
+from transformers import SPIECE_UNDERLINE, Kosmos2Tokenizer, Kosmos2TokenizerFast
 from transformers.testing_utils import get_tests_dir, require_sentencepiece, require_tokenizers, slow
 from transformers.utils import cached_property
 
@@ -30,9 +30,9 @@ SAMPLE_VOCAB = get_tests_dir("fixtures/test_sentencepiece.model")
 
 @require_sentencepiece
 @require_tokenizers
-class XLMRobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
-    tokenizer_class = XLMRobertaTokenizer
-    rust_tokenizer_class = XLMRobertaTokenizerFast
+class Kosmos2TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
+    tokenizer_class = Kosmos2Tokenizer
+    rust_tokenizer_class = Kosmos2TokenizerFast
     test_rust_tokenizer = True
     test_sentencepiece = True
 
@@ -40,7 +40,7 @@ class XLMRobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
         super().setUp()
 
         # We have a SentencePiece fixture for testing
-        tokenizer = XLMRobertaTokenizer(SAMPLE_VOCAB, keep_accents=True)
+        tokenizer = Kosmos2Tokenizer(SAMPLE_VOCAB, keep_accents=True)
         tokenizer.save_pretrained(self.tmpdirname)
 
     def test_convert_token_and_id(self):
@@ -63,7 +63,7 @@ class XLMRobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
         self.assertEqual(self.get_tokenizer().vocab_size, 1_002)
 
     def test_full_tokenizer(self):
-        tokenizer = XLMRobertaTokenizer(SAMPLE_VOCAB, keep_accents=True)
+        tokenizer = Kosmos2Tokenizer(SAMPLE_VOCAB, keep_accents=True)
 
         tokens = tokenizer.tokenize("This is a test")
         self.assertListEqual(tokens, ["▁This", "▁is", "▁a", "▁t", "est"])
@@ -212,12 +212,12 @@ class XLMRobertaTokenizationTest(TokenizerTesterMixin, unittest.TestCase):
 
     @cached_property
     def big_tokenizer(self):
-        return XLMRobertaTokenizer.from_pretrained("xlm-roberta-base")
+        return Kosmos2Tokenizer.from_pretrained("xlm-roberta-base")
 
     def test_picklable_without_disk(self):
         with tempfile.NamedTemporaryFile() as f:
             shutil.copyfile(SAMPLE_VOCAB, f.name)
-            tokenizer = XLMRobertaTokenizer(f.name, keep_accents=True)
+            tokenizer = Kosmos2Tokenizer(f.name, keep_accents=True)
             pickled_tokenizer = pickle.dumps(tokenizer)
         pickle.loads(pickled_tokenizer)
 
