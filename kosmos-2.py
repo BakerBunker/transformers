@@ -1575,6 +1575,111 @@ if __name__ == "__main__":
 
     # ================================================================================
 
+
+
+# from src.transformers.models.kosmos2.tokenization_kosmos2 import Kosmos2Tokenizer
+# from src.transformers.models.kosmos2.tokenization_kosmos2_fast import Kosmos2TokenizerFast
+#
+# slow_tokenizer = Kosmos2Tokenizer(vocab_file="sentencepiece.bpe.model", add_tag_and_patch_index_tokens=True)
+# fast_tokenizer = Kosmos2TokenizerFast(__slow_tokenizer=slow_tokenizer, add_tag_and_patch_index_tokens=True)
+#
+#
+# def run_tokenizers(s):
+#
+#     r1 = slow_tokenizer.tokenize(s)
+#     print(r1)
+#     r1 = slow_tokenizer(s)
+#     print(r1)
+#
+#     r2 = fast_tokenizer.tokenize(s)
+#     print(r2)
+#     r2 = fast_tokenizer(s)
+#     print(r2)
+#
+#
+# # add_tokens: special_tokens=False
+#
+# s1 = "I love <phrase>this dog</phrase>"
+# run_tokenizers(s1)
+#
+# """
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# ['▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+#
+# s2 = "I love<phrase> this dog</phrase>"
+# run_tokenizers(s2)
+#
+# """
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+# s3 = "<grounding>I love  <phrase> this dog</phrase> and <phrase>those 2 cats </phrase>"
+# run_tokenizers(s3)
+#
+# """
+# ['<grounding>', '▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>', '▁and', '<phrase>', '▁those', '▁2', '▁cats', '</phrase>']
+# {'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# ['<grounding>', '▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>', '▁and', ' <phrase>', '▁those', '▁2', '▁cats', ' </phrase>']
+# {'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+# s4 = "<grounding>Describe this image in detail:"
+# run_tokenizers(s4)
+#
+# """
+# ['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
+# {'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# ['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
+# {'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+#
+# # add_tokens: special_tokens=True
+#
+# """
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# ['▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+# """
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# ['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
+# {'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+# """
+# ['<grounding>', '▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>', '▁and', '<phrase>', '▁those', '▁2', '▁cats', '</phrase>']
+# {'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# ['<grounding>', '▁I', '▁love', '  <phrase>', '▁this', '▁dog', '</phrase>', '▁and', ' <phrase>', '▁those', '▁2', '▁cats', ' </phrase>']
+# {'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+#
+# """
+# ['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
+# {'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# ['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
+# {'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
+# """
+
+
+
+
+
+
+
+
+
+
 # # TODO:
 #
 # check: 6c811a32 new model: IDEFICS via HuggingFaceM4 (#24796)
