@@ -1585,8 +1585,9 @@ fast_tokenizer = Kosmos2TokenizerFast(__slow_tokenizer=slow_tokenizer, add_tag_a
 slow_tokenizer.save_pretrained("my_slow_tok")
 fast_tokenizer.save_pretrained("my_fast_tok")
 
-slow_tokenizer = Kosmos2Tokenizer.from_pretrained("my_slow_tok")
-fast_tokenizer = Kosmos2TokenizerFast.from_pretrained("my_fast_tok")
+# The `added_tokens.json` causes a serious problem for the fast tokenizer.
+# slow_tokenizer = Kosmos2Tokenizer.from_pretrained("my_slow_tok")
+# fast_tokenizer = Kosmos2TokenizerFast.from_pretrained("my_fast_tok")
 
 
 def run_tokenizers(s):
