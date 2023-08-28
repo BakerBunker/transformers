@@ -52,12 +52,15 @@ class Kosmos2TokenizationTest(TokenizerTesterMixin, unittest.TestCase):
         self.assertEqual(self.get_tokenizer()._convert_id_to_token(token_id), token)
 
     def test_get_vocab(self):
-        vocab_keys = list(self.get_tokenizer().get_vocab().keys())
+        tokenizer = self.get_tokenizer()
+        vocab_keys = list(tokenizer.get_vocab().keys())
 
         self.assertEqual(vocab_keys[0], "<s>")
         self.assertEqual(vocab_keys[1], "<pad>")
-        self.assertEqual(vocab_keys[-1], "<mask>")
-        self.assertEqual(len(vocab_keys), 1_002)
+        self.assertEqual(vocab_keys[-(len(tokenizer.tag_tokens) + tokenizer.num_patch_index_tokens + 1)], "<mask>")
+        self.assertEqual(vocab_keys[-1], f"<patch_index_{tokenizer.num_patch_index_tokens - 1}>")
+
+        self.assertEqual(len(vocab_keys), 1_002 + len(tokenizer.tag_tokens) + tokenizer.num_patch_index_tokens)
 
     def test_vocab_size(self):
         self.assertEqual(self.get_tokenizer().vocab_size, 1_002)
