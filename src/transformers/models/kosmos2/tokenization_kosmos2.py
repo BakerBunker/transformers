@@ -207,9 +207,7 @@ class Kosmos2Tokenizer(PreTrainedTokenizer):
 
         if add_tag_and_patch_index_tokens:
             for idx, token in enumerate(self.tag_tokens + patch_index_tokens):
-                # we can't add them as special tokens, as the slow tokenizer doesn't save the information of a token
-                # being special when it is added through `add_tokens`, but the fast tokenizer is able to do so.
-                self.add_tokens(AddedToken(token, lstrip=True, rstrip=False), special_tokens=True)
+                self.add_tokens(AddedToken(token, lstrip=True, rstrip=False))
 
     def _decode(
         self,
