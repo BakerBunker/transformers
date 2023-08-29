@@ -18,26 +18,33 @@ import unittest
 import numpy as np
 import pytest
 
-from transformers.testing_utils import require_vision
+from transformers.testing_utils import get_tests_dir, require_vision, require_sentencepiece, require_tokenizers
 from transformers.utils import is_vision_available
 
 
 if is_vision_available():
     from PIL import Image
 
-    from transformers import AutoProcessor, BertTokenizer, BlipImageProcessor, BlipProcessor, PreTrainedTokenizerFast
+    from transformers import AutoProcessor, BertTokenizer, Kosmos2ImageProcessor, Kosmos2Processor, PreTrainedTokenizerFast, Kosmos2Tokenizer, Kosmos2TokenizerFast
 
 
+SAMPLE_VOCAB = get_tests_dir("fixtures/test_sentencepiece.model")
+
+
+@require_sentencepiece
+@require_tokenizers
 @require_vision
 class BlipProcessorTest(unittest.TestCase):
     def setUp(self):
         self.tmpdirname = tempfile.mkdtemp()
 
-        image_processor = BlipImageProcessor()
-        tokenizer = BertTokenizer.from_pretrained("hf-internal-testing/tiny-random-BertModel")
+        image_processor = Kosmos2ImageProcessor()
 
-        processor = BlipProcessor(image_processor, tokenizer)
+        # We have a SentencePiece fixture for testing
+        slow_tokenizer = Kosmos2Tokenizer(SAMPLE_VOCAB)
+        fast_tokenizer = Kosmos2TokenizerFast(__slow_tokenizer=slow_tokenizer)
 
+        processor = Kosmos2Processor(image_processor, fast_tokenizer)
         processor.save_pretrained(self.tmpdirname)
 
     def get_tokenizer(self, **kwargs):
@@ -61,13 +68,13 @@ class BlipProcessorTest(unittest.TestCase):
         return image_inputs
 
     def test_save_load_pretrained_additional_features(self):
-        processor = BlipProcessor(tokenizer=self.get_tokenizer(), image_processor=self.get_image_processor())
+        processor = Kosmos2Processor(tokenizer=self.get_tokenizer(), image_processor=self.get_image_processor())
         processor.save_pretrained(self.tmpdirname)
 
         tokenizer_add_kwargs = self.get_tokenizer(bos_token="(BOS)", eos_token="(EOS)")
         image_processor_add_kwargs = self.get_image_processor(do_normalize=False, padding_value=1.0)
 
-        processor = BlipProcessor.from_pretrained(
+        processor = Kosmos2Processor.from_pretrained(
             self.tmpdirname, bos_token="(BOS)", eos_token="(EOS)", do_normalize=False, padding_value=1.0
         )
 
@@ -75,13 +82,13 @@ class BlipProcessorTest(unittest.TestCase):
         self.assertIsInstance(processor.tokenizer, PreTrainedTokenizerFast)
 
         self.assertEqual(processor.image_processor.to_json_string(), image_processor_add_kwargs.to_json_string())
-        self.assertIsInstance(processor.image_processor, BlipImageProcessor)
+        self.assertIsInstance(processor.image_processor, Kosmos2ImageProcessor)
 
     def test_image_processor(self):
         image_processor = self.get_image_processor()
         tokenizer = self.get_tokenizer()
 
-        processor = BlipProcessor(tokenizer=tokenizer, image_processor=image_processor)
+        processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
         image_input = self.prepare_image_inputs()
 
@@ -95,7 +102,7 @@ class BlipProcessorTest(unittest.TestCase):
         image_processor = self.get_image_processor()
         tokenizer = self.get_tokenizer()
 
-        processor = BlipProcessor(tokenizer=tokenizer, image_processor=image_processor)
+        processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
         input_str = "lower newer"
 
@@ -110,7 +117,7 @@ class BlipProcessorTest(unittest.TestCase):
         image_processor = self.get_image_processor()
         tokenizer = self.get_tokenizer()
 
-        processor = BlipProcessor(tokenizer=tokenizer, image_processor=image_processor)
+        processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
         input_str = "lower newer"
         image_input = self.prepare_image_inputs()
@@ -127,7 +134,7 @@ class BlipProcessorTest(unittest.TestCase):
         image_processor = self.get_image_processor()
         tokenizer = self.get_tokenizer()
 
-        processor = BlipProcessor(tokenizer=tokenizer, image_processor=image_processor)
+        processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
         predicted_ids = [[1, 4, 5, 8, 1, 0, 8], [3, 4, 3, 1, 1, 8, 9]]
 
@@ -140,7 +147,7 @@ class BlipProcessorTest(unittest.TestCase):
         image_processor = self.get_image_processor()
         tokenizer = self.get_tokenizer()
 
-        processor = BlipProcessor(tokenizer=tokenizer, image_processor=image_processor)
+        processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
         input_str = "lower newer"
         image_input = self.prepare_image_inputs()
