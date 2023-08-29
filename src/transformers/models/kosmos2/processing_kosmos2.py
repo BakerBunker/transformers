@@ -102,6 +102,10 @@ class Kosmos2Processor(ProcessorMixin):
         """
         encoding = BatchFeature()
 
+        if images is not None:
+            image_encoding = self.image_processor(images, return_tensors=return_tensors)
+            encoding.update(image_encoding)
+
         if text is not None:
             text = self.preprocess_text(text, images, bboxes, num_image_tokens=num_image_tokens)
             text_encoding = self.tokenizer(
@@ -123,10 +127,6 @@ class Kosmos2Processor(ProcessorMixin):
                 **kwargs,
             )
             encoding.update(text_encoding)
-
-        if images is not None:
-            image_encoding = self.image_processor(images, return_tensors=return_tensors)
-            encoding.update(image_encoding)
 
         if text is not None and images is not None:
             # Use the id of the first token after <unk>
