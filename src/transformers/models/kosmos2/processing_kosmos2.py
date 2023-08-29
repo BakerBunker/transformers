@@ -100,6 +100,9 @@ class Kosmos2Processor(ProcessorMixin):
 
         Please refer to the docstring of the above two methods for more information.
         """
+        if images is None and text is None:
+            raise ValueError("You have to specify either images or text.")
+
         encoding = BatchFeature()
 
         if images is not None:

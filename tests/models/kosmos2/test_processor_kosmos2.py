@@ -93,7 +93,6 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         image_input = self.prepare_image_inputs()
 
         input_feat_extract = image_processor(image_input, return_tensors="np")
-        # TODO: Do we really need to require text inputs?
         input_processor = processor(images=image_input, return_tensors="np")
 
         for key in input_feat_extract.keys():
@@ -125,7 +124,6 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         inputs = processor(text=input_str, images=image_input)
 
-        # TODO: checkout order
         self.assertListEqual(list(inputs.keys()), ["pixel_values", "input_ids", "attention_mask", "image_features_mask"])
 
         # test if it raises when no input is passed
