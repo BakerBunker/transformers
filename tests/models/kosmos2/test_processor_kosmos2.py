@@ -105,7 +105,7 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
-        input_str = "lower <patch_index_0001>newer"
+        input_str = "lower newer"
 
         encoded_processor = processor(text=input_str)
 
