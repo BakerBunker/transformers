@@ -1479,7 +1479,7 @@ if __name__ == "__main__":
     r8 = fast_processor.decode(generated_ids)
     print(r8)
 
-    token = "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"
+    token = "xxx"
 
     slow_tokenizer.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
     fast_tokenizer.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
