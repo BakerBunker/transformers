@@ -1290,7 +1290,7 @@ def check_real_model_with_snowman_detail_sample(model):
 
 def check_real_model_with_snowman_detail_sample_end_to_end():
 
-    ckpt = "ydshieh/kosmos-2-patch14-224"
+    ckpt = "ydshieh/temp-testing-kosmos-2"
 
     slow_tokenizer = Kosmos2Tokenizer.from_pretrained(ckpt)
     fast_tokenizer = Kosmos2TokenizerFast.from_pretrained(ckpt)
@@ -1479,14 +1479,14 @@ if __name__ == "__main__":
     r8 = fast_processor.decode(generated_ids)
     print(r8)
 
-    token = "XXX"
+    token = "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"
 
-    # slow_tokenizer.push_to_hub("ydshieh/kosmos-2-patch14-224", use_auth_token=token)
-    # fast_tokenizer.push_to_hub("ydshieh/kosmos-2-patch14-224", use_auth_token=token)
-    # image_processor.push_to_hub("ydshieh/kosmos-2-patch14-224", use_auth_token=token)
-    # fast_processor.push_to_hub("ydshieh/kosmos-2-patch14-224", use_auth_token=token)
+    slow_tokenizer.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
+    fast_tokenizer.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
+    image_processor.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
+    fast_processor.push_to_hub("ydshieh/temp-testing-kosmos-2", use_auth_token=token)
 
-    # fast_processor = Kosmos2Processor.from_pretrained("ydshieh/kosmos-2-patch14-224")
+    # fast_processor = Kosmos2Processor.from_pretrained("ydshieh/temp-testing-kosmos-2")
     # r9 = fast_processor.decode(generated_ids)
     # print(r9)
 
@@ -1544,13 +1544,13 @@ if __name__ == "__main__":
     real_model = Kosmos2ForConditionalGeneration.from_pretrained("HF_Kosmos2")
 
     # # If we want to push to the Hub
-    # repo_id = "ydshieh/kosmos-2-patch14-224"
+    # repo_id = "ydshieh/temp-testing-kosmos-2"
     # real_model.save_pretrained("HF_Kosmos2", push_to_hub=True, repo_id=repo_id, use_auth_token="XXX")
     #
     # # check we can load from the Hub
     # real_model = Kosmos2ForConditionalGeneration.from_pretrained(repo_id)
 
-    repo_id = "ydshieh/kosmos-2-patch14-224"
+    repo_id = "ydshieh/temp-testing-kosmos-2"
 
     # check we can load from the Hub
     real_model = Kosmos2ForConditionalGeneration.from_pretrained(repo_id)
@@ -1574,131 +1574,3 @@ if __name__ == "__main__":
     check_real_model_with_snowman_detail_sample_end_to_end()
 
     # ================================================================================
-
-
-from src.transformers.models.kosmos2.tokenization_kosmos2 import Kosmos2Tokenizer
-from src.transformers.models.kosmos2.tokenization_kosmos2_fast import Kosmos2TokenizerFast
-
-slow_tokenizer = Kosmos2Tokenizer(vocab_file="sentencepiece.bpe.model", add_tag_and_patch_index_tokens=True)
-fast_tokenizer = Kosmos2TokenizerFast(__slow_tokenizer=slow_tokenizer, add_tag_and_patch_index_tokens=True)
-
-slow_tokenizer.save_pretrained("my_slow_tok")
-fast_tokenizer.save_pretrained("my_fast_tok")
-
-# The `added_tokens.json` causes a serious problem for the fast tokenizer.
-# slow_tokenizer = Kosmos2Tokenizer.from_pretrained("my_slow_tok")
-# fast_tokenizer = Kosmos2TokenizerFast.from_pretrained("my_fast_tok")
-
-
-def run_tokenizers(s):
-
-    r1 = slow_tokenizer.tokenize(s)
-    print(r1)
-    r1 = slow_tokenizer(s)
-    print(r1)
-
-    r2 = fast_tokenizer.tokenize(s)
-    print(r2)
-    r2 = fast_tokenizer(s)
-    print(r2)
-
-
-# add_tokens: special_tokens=False
-
-s1 = "I love <phrase>this dog</phrase>"
-run_tokenizers(s1)
-
-"""
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-['▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-
-s2 = "I love<phrase> this dog</phrase>"
-run_tokenizers(s2)
-
-"""
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-s3 = "<grounding>I love  <phrase> this dog</phrase> and <phrase>those 2 cats </phrase>"
-run_tokenizers(s3)
-
-"""
-['<grounding>', '▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>', '▁and', '<phrase>', '▁those', '▁2', '▁cats', '</phrase>']
-{'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-['<grounding>', '▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>', '▁and', ' <phrase>', '▁those', '▁2', '▁cats', ' </phrase>']
-{'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-s4 = "<grounding>Describe this image in detail:"
-run_tokenizers(s4)
-
-"""
-['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
-{'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
-{'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-
-# add_tokens: special_tokens=True
-
-"""
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-['▁I', '▁love', ' <phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-"""
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-['▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>']
-{'input_ids': [0, 13, 275, 64007, 38, 1133, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-"""
-['<grounding>', '▁I', '▁love', '<phrase>', '▁this', '▁dog', '</phrase>', '▁and', '<phrase>', '▁those', '▁2', '▁cats', '</phrase>']
-{'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-['<grounding>', '▁I', '▁love', '  <phrase>', '▁this', '▁dog', '</phrase>', '▁and', ' <phrase>', '▁those', '▁2', '▁cats', ' </phrase>']
-{'input_ids': [0, 64012, 13, 275, 64007, 38, 1133, 64008, 8, 64007, 164, 269, 4776, 64008, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-"""
-['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
-{'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-['<grounding>', '▁Describ', 'e', '▁this', '▁image', '▁in', '▁detail', ':']
-{'input_ids': [0, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 2], 'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1, 1]}
-"""
-
-
-# # TODO:
-#
-# check: 6c811a32 new model: IDEFICS via HuggingFaceM4 (#24796)
-#
-#
-#
-# docs/source/en/_toctree.yml
-# docs/source/en/index.md
-# docs/source/en/model_doc/idefics.md
-#
-# src/transformers/utils/dummy_pt_objects.py
-# src/transformers/utils/dummy_vision_objects.py
-#
-# README.md
-#
-# README_es.md
-# README_hd.md
-# README_ja.md
-# README_ko.md
-# README_zh-hans.md
-# README_zh-hant.md
-#
-#
-# utils/check_config_attributes.py
