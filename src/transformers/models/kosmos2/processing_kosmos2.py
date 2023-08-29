@@ -100,37 +100,35 @@ class Kosmos2Processor(ProcessorMixin):
 
         Please refer to the docstring of the above two methods for more information.
         """
-        if text is None:
-            raise ValueError("You have to specify at least `text`.")
-
-        text = self.preprocess_text(text, images, bboxes, num_image_tokens=num_image_tokens)
-
         encoding = BatchFeature()
 
-        text_encoding = self.tokenizer(
-            text=text,
-            add_special_tokens=add_special_tokens,
-            padding=padding,
-            truncation=truncation,
-            max_length=max_length,
-            stride=stride,
-            pad_to_multiple_of=pad_to_multiple_of,
-            return_attention_mask=return_attention_mask,
-            return_overflowing_tokens=return_overflowing_tokens,
-            return_special_tokens_mask=return_special_tokens_mask,
-            return_offsets_mapping=return_offsets_mapping,
-            return_token_type_ids=return_token_type_ids,
-            return_length=return_length,
-            verbose=verbose,
-            return_tensors=return_tensors,
-            **kwargs,
-        )
-        encoding.update(text_encoding)
+        if text is not None:
+            text = self.preprocess_text(text, images, bboxes, num_image_tokens=num_image_tokens)
+            text_encoding = self.tokenizer(
+                text=text,
+                add_special_tokens=add_special_tokens,
+                padding=padding,
+                truncation=truncation,
+                max_length=max_length,
+                stride=stride,
+                pad_to_multiple_of=pad_to_multiple_of,
+                return_attention_mask=return_attention_mask,
+                return_overflowing_tokens=return_overflowing_tokens,
+                return_special_tokens_mask=return_special_tokens_mask,
+                return_offsets_mapping=return_offsets_mapping,
+                return_token_type_ids=return_token_type_ids,
+                return_length=return_length,
+                verbose=verbose,
+                return_tensors=return_tensors,
+                **kwargs,
+            )
+            encoding.update(text_encoding)
 
         if images is not None:
             image_encoding = self.image_processor(images, return_tensors=return_tensors)
             encoding.update(image_encoding)
 
+        if text is not None and images is not None:
             # Use the id of the first token after <unk>
             if first_image_token_id is None:
                 first_image_token_id = self.tokenizer.unk_token_id + 1
