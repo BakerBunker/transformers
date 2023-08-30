@@ -104,7 +104,7 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
-        input_str = "lower newer"
+        input_str = "This is a test"
 
         encoded_processor = processor(text=input_str)
 
@@ -119,7 +119,7 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
-        input_str = "lower newer"
+        input_str = "This is a test"
         image_input = self.prepare_image_inputs()
 
         inputs = processor(text=input_str, images=image_input)
@@ -149,10 +149,48 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         processor = Kosmos2Processor(tokenizer=tokenizer, image_processor=image_processor)
 
-        input_str = "lower newer"
+        input_str = "This is a test"
         image_input = self.prepare_image_inputs()
 
+        # both image and text
         inputs = processor(text=input_str, images=image_input)
-
-        # For now the processor supports only ['pixel_values', 'input_ids', 'attention_mask']
         self.assertListEqual(list(inputs.keys()), ["pixel_values", "input_ids", "attention_mask", "image_features_mask"])
+
+        # only text
+        inputs = processor(text=input_str)
+        self.assertListEqual(list(inputs.keys()), ["input_ids", "attention_mask"])
+
+        # only image
+        inputs = processor(images=image_input)
+        self.assertListEqual(list(inputs.keys()), ["pixel_values"])
+
+    def test_full_processor(self):
+
+        processor = Kosmos2Processor.from_pretrained("ydshieh/temp-testing-kosmos-2")
+
+        # test with different formats.
+        # fmt: off
+        texts = [
+            # no phrase
+            "<grounding>I love this dog, and that cat."
+            # 1 phrase with no bbox
+            "<grounding> I love <phrase> this dog </phrase>, and that cat.",
+            # 1 phrase with a single bbox
+            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </object>, and that cat.",  # noqa
+            # 1 phrase with 2 bboxes
+            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and that cat.",  # noqa
+            # 2 phrases with no bbox
+            "<grounding> I love <phrase> this dog </phrase>, and <phrase> that cat </phrase>.",
+            # 2 phrases: one with 2 bboxes and another one without bbox
+            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and <phrase> that cat </phrase>.",  # noqa
+            # 2 phrases: one with 2 bboxes and another one with a single bbox
+            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and <phrase> that cat </phrase> <object> <patch_index_0344> <patch_index_0763> </object>.",  # noqa
+        ]
+        # fmt: on
+
+        image = ""
+
+        bboxes = [
+            (),  # a single tuple
+            [(), ()]  # a list of tuples
+        ]
