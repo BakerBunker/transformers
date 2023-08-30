@@ -172,25 +172,29 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         # fmt: off
         texts = [
             # no phrase
-            "<grounding>I love this dog, and that cat."
+            "<grounding> Two puppies sit in a field of grass."
             # 1 phrase with no bbox
-            "<grounding> I love <phrase> this dog </phrase>, and that cat.",
+            "<grounding> <phrase> Two puppies </phrase> sit in a field of grass."
             # 1 phrase with a single bbox
-            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </object>, and that cat.",  # noqa
+            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </object> sit in a field of grass."  # noqa
             # 1 phrase with 2 bboxes
-            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and that cat.",  # noqa
+            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of grass."  # noqa
             # 2 phrases with no bbox
-            "<grounding> I love <phrase> this dog </phrase>, and <phrase> that cat </phrase>.",
+            "<grounding> <phrase> Two puppies </phrase> sit in a field of <phrase> grass </phrase>."
             # 2 phrases: one with 2 bboxes and another one without bbox
-            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and <phrase> that cat </phrase>.",  # noqa
+            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase>."  # noqa
             # 2 phrases: one with 2 bboxes and another one with a single bbox
-            "<grounding> I love <phrase> this dog </phrase> <object> <patch_index_0044> <patch_index_0863> </delimiter_of_multi_objects/> <patch_index_0144> <patch_index_0963> </object>, and <phrase> that cat </phrase> <object> <patch_index_0344> <patch_index_0763> </object>.",  # noqa
+            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase> <object> <patch_index_0000> <patch_index_0000> </object>."  # noqa
         ]
         # fmt: on
 
-        image = ""
+        # TODO: add to the official repo.
+        image = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
 
         bboxes = [
-            (),  # a single tuple
-            [(), ()]  # a list of tuples
+            [(79, 1016)],
+            [[(79, 1016)]],
+            [[(79, 1016), (135, 1008)]],
+            [[(79, 1016), (135, 1008)], (0, 0)],
+            [[(79, 1016), (135, 1008)], [(0, 0)]],
         ]
