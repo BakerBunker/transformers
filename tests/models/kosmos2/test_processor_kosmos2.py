@@ -168,33 +168,97 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
         processor = Kosmos2Processor.from_pretrained("ydshieh/temp-testing-kosmos-2")
 
-        # test with different formats.
+        # test with different input formats.
         # fmt: off
         texts = [
             # no phrase
-            "<grounding> Two puppies sit in a field of grass."
-            # 1 phrase with no bbox
-            "<grounding> <phrase> Two puppies </phrase> sit in a field of grass."
-            # 1 phrase with a single bbox
-            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </object> sit in a field of grass."  # noqa
-            # 1 phrase with 2 bboxes
-            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of grass."  # noqa
-            # 2 phrases with no bbox
-            "<grounding> <phrase> Two puppies </phrase> sit in a field of <phrase> grass </phrase>."
-            # 2 phrases: one with 2 bboxes and another one without bbox
-            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase>."  # noqa
-            # 2 phrases: one with 2 bboxes and another one with a single bbox
-            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase> <object> <patch_index_0000> <patch_index_0000> </object>."  # noqa
+            "<grounding> Two puppies sit in a field of grass.",
+            # 1 phrase
+            "<grounding> <phrase> Two puppies </phrase> sit in a field of grass.",
+            # 2 phrases
+            "<grounding> <phrase> Two puppies </phrase> sit in a field of <phrase> grass </phrase>.",
         ]
         # fmt: on
 
         # TODO: add to the official repo.
         image = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
 
-        bboxes = [
-            [(79, 1016)],
-            [[(79, 1016)]],
-            [[(79, 1016), (135, 1008)]],
-            [[(79, 1016), (135, 1008)], (0, 0)],
-            [[(79, 1016), (135, 1008)], [(0, 0)]],
+        # fmt: off
+        expected_texts = [
+            # no phrase
+            "<grounding> Two puppies sit in a field of grass.",
+            # 1 phrase: without bbox
+            "<grounding><phrase> Two puppies</phrase> sit in a field of grass.",
+            # 1 phrase: with a single bbox
+            "<grounding><phrase> Two puppies</phrase><object><patch_index_0079><patch_index_1016></object> sit in a field of grass.",  # noqa
+            # 1 phrase: with 2 bboxes
+            "<grounding><phrase> Two puppies</phrase><object><patch_index_0079><patch_index_1016></delimiter_of_multi_objects/><patch_index_0135><patch_index_1008></object> sit in a field of grass.",  # noqa
+            # 2 phrases: one with 2 bboxes and another one without bbox
+            "<grounding><phrase> Two puppies</phrase><object><patch_index_0079><patch_index_1016></delimiter_of_multi_objects/><patch_index_0135><patch_index_1008></object> sit in a field of<phrase> grass</phrase> .",  # noqa
+            # 2 phrases: one with 2 bboxes and another one with a single bbox
+            "<grounding><phrase> Two puppies</phrase><object><patch_index_0079><patch_index_1016></delimiter_of_multi_objects/><patch_index_0135><patch_index_1008></object> sit in a field of<phrase> grass</phrase><object><patch_index_0480><patch_index_1023></object> .",  # noqa
         ]
+        # fmt: on
+
+        # no phrase
+        a = processor.preprocess_text(images=None, texts=texts[0], bboxes=None)
+        assert a == expected_texts[0]
+
+        # no phrase
+        a = processor.preprocess_text(images=None, texts=texts[0], bboxes=[])
+        assert a == expected_texts[0]
+
+        # 1 phrase: no bbox
+        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[None])
+        assert a == expected_texts[1]
+
+        # 1 phrase: no bbox
+        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[]])
+        assert a == expected_texts[1]
+
+        # a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
+        # assert a == expected_texts[1]
+
+        # 1 phrase: 1 bbox
+        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[(79, 1016)])
+        assert a == expected_texts[2]
+
+        # 1 phrase: 1 bbox
+        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016)]])
+        assert a == expected_texts[2]
+
+        # 1 phrase: 2 bboxes
+        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016), (135, 1008)]])
+        assert a == expected_texts[3]
+
+        # 2 phrase: 2 bboxes + no bbox
+        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], None])
+        assert a == expected_texts[4]
+
+        # 2 phrase: 2 bboxes + no bbox
+        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
+        assert a == expected_texts[4]
+
+        # a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
+        # assert a == expected_texts[4]
+
+        # 2 phrase: 2 bboxes + 1 bbox
+        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
+        assert a == expected_texts[5]
+
+        # 2 phrase: 2 bboxes + 1 bbox
+        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [(480, 1023)]])
+        assert a == expected_texts[5]
+
+        # batch
+        a = processor.preprocess_text(
+            images=None,
+            texts=[texts[0], texts[1], texts[1], texts[2]],
+            bboxes=[
+                None,  # no phrase
+                [[]],  # 1 phrase: no bbox
+                [(79, 1016)],  # 1 phrase: 1 bbox
+                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
+            ]
+        )
+        assert a == [expected_texts[0], expected_texts[1], expected_texts[2], expected_texts[5]]

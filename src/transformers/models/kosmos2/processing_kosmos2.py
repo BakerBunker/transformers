@@ -378,9 +378,13 @@ class Kosmos2Processor(ProcessorMixin):
                 bbox = [bbox]
             patch_index_strings = []
             # A phrase could have multiple bboxes
+            assert all(box is not None for box in bbox)
             for box in bbox:
                 patch_index_1, patch_index_2 = self._convert_bbox_to_patch_index_tokens(box)
                 patch_index_strings.append(f"{patch_index_1} {patch_index_2}")
+            # `bbox` being an empty list
+            if len(patch_index_strings) == 0:
+                continue
             position_str = " </delimiter_of_multi_objects/> ".join(patch_index_strings)
             buffer.append(f"<object> {position_str} </object>")
         # remaining
