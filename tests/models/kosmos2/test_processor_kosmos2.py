@@ -1,4 +1,5 @@
-# Copyright 2022 The HuggingFace Team. All rights reserved.
+# coding=utf-8
+# Copyright 2023 Microsoft Research and The HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,6 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import requests
 import shutil
 import tempfile
 import unittest
@@ -166,8 +169,6 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
     def test_full_processor(self):
 
-        import requests
-
         # TODO: add to the official repo.
         url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
 
@@ -188,12 +189,14 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         # fmt: on
 
         image = Image.open(requests.get(url, stream=True).raw)
+        # fmt: off
         bboxes = [
             [None, []],
             [[None], [[]], [(79, 1016)], [[(79, 1016)]], [[(79, 1016), (135, 1008)]]],
             [[[(79, 1016), (135, 1008)], None], [[(79, 1016), (135, 1008)], []], [[(79, 1016), (135, 1008)], (480, 1023)], [[(79, 1016), (135, 1008)], [(480, 1023)]]],
             [[None, [(480, 1023)]]],
         ]
+        # fmt: on
 
         batch_image = [image] * 4
         batch_text = [texts[0], texts[1], texts[1], texts[2]]
@@ -221,6 +224,7 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         ]
         # fmt: on
 
+        # fmt: off
         expected_input_ids = [
             [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2],
             [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2],
@@ -229,6 +233,7 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2],
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],
         ]
+        # fmt: on
 
         EXPECTED_PIXEL_VALUES = np.array(
             [
