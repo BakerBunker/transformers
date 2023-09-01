@@ -177,6 +177,8 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             "<grounding> <phrase> Two puppies </phrase> sit in a field of grass.",
             # 2 phrases
             "<grounding> <phrase> Two puppies </phrase> sit in a field of <phrase> grass </phrase>.",
+            # 2 phrases:  bboxes already specified for the 1st phrase
+            "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase>.",
         ]
         # fmt: on
 
@@ -203,18 +205,26 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         # no phrase
         a = processor.preprocess_text(images=None, texts=texts[0], bboxes=None)
         assert a == expected_texts[0]
+        a = processor(images=None, text=texts[0], bboxes=None)
+        assert a.input_ids == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # no phrase
         a = processor.preprocess_text(images=None, texts=texts[0], bboxes=[])
         assert a == expected_texts[0]
+        a = processor(images=None, text=texts[0], bboxes=[])
+        assert a.input_ids == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # 1 phrase: no bbox
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[None])
         assert a == expected_texts[1]
+        a = processor(images=None, text=texts[1], bboxes=[None])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # 1 phrase: no bbox
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[]])
         assert a == expected_texts[1]
+        a = processor(images=None, text=texts[1], bboxes=[[]])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
         # assert a == expected_texts[1]
@@ -222,22 +232,32 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         # 1 phrase: 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[(79, 1016)])
         assert a == expected_texts[2]
+        a = processor(images=None, text=texts[1], bboxes=[(79, 1016)])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # 1 phrase: 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016)]])
         assert a == expected_texts[2]
+        a = processor(images=None, text=texts[1], bboxes=[[(79, 1016)]])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # 1 phrase: 2 bboxes
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016), (135, 1008)]])
         assert a == expected_texts[3]
+        a = processor(images=None, text=texts[1], bboxes=[[(79, 1016), (135, 1008)]])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
         # 2 phrase: 2 bboxes + no bbox
         a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], None])
         assert a == expected_texts[4]
+        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], None])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2]
 
         # 2 phrase: 2 bboxes + no bbox
         a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
         assert a == expected_texts[4]
+        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2]
 
         # a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
         # assert a == expected_texts[4]
@@ -245,10 +265,20 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         # 2 phrase: 2 bboxes + 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
         assert a == expected_texts[5]
+        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
 
         # 2 phrase: 2 bboxes + 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [(480, 1023)]])
         assert a == expected_texts[5]
+        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], [(480, 1023)]])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
+
+        # 2 phrase: no box (as already specified in the text) + 1 bbox
+        a = processor.preprocess_text(images=None, texts=texts[3], bboxes=[None, [(480, 1023)]])
+        assert a == expected_texts[5]
+        a = processor(images=None, text=texts[3], bboxes=[None, [(480, 1023)]])
+        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
 
         # batch
         a = processor.preprocess_text(
@@ -262,3 +292,19 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             ]
         )
         assert a == [expected_texts[0], expected_texts[1], expected_texts[2], expected_texts[5]]
+        a = processor(
+            images=None,
+            text=[texts[0], texts[1], texts[1], texts[2]],
+            bboxes=[
+                None,  # no phrase
+                [[]],  # 1 phrase: no bbox
+                [(79, 1016)],  # 1 phrase: 1 bbox
+                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
+            ]
+        )
+        assert a.input_ids == [
+            [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2],
+            [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2],
+            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2],
+            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],  # noqa
+        ]
