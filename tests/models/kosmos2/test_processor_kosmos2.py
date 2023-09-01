@@ -308,10 +308,26 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],  # noqa
         ]
 
+        a = processor(
+            images=None,
+            text=[texts[0], texts[1], texts[1], texts[2]],
+            bboxes=[
+                None,  # no phrase
+                [[]],  # 1 phrase: no bbox
+                [(79, 1016)],  # 1 phrase: 1 bbox
+                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
+            ],
+            return_tensors="pt",
+            padding=True,
+        )
+        assert a.input_ids.numpy().tolist()[0] == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2] + [1] * (28 - 12)
+        assert a.input_ids.numpy().tolist()[-1] == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
+
         # TODO: add to the official repo.
         url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
         import requests; image = Image.open(requests.get(url, stream=True).raw)
 
+        # test with image
         num_image_tokens = 64
         # (`image` type is not checked in `preprocess_text`. It works as long as it is not `None`.)
         a = processor.preprocess_text(images=image, texts=texts[0], bboxes=None, num_image_tokens=num_image_tokens)
