@@ -166,6 +166,11 @@ class Kosmos2ProcessorTest(unittest.TestCase):
 
     def test_full_processor(self):
 
+        import requests
+
+        # TODO: add to the official repo.
+        url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
+
         processor = Kosmos2Processor.from_pretrained("ydshieh/temp-testing-kosmos-2")
 
         # test with different input formats.
@@ -181,6 +186,23 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             "<grounding> <phrase> Two puppies </phrase> <object> <patch_index_0079> <patch_index_1016> </delimiter_of_multi_objects/> <patch_index_0135> <patch_index_1008> </object> sit in a field of <phrase> grass </phrase>.",
         ]
         # fmt: on
+
+        image = Image.open(requests.get(url, stream=True).raw)
+        bboxes = [
+            [None, []],
+            [[None], [[]], [(79, 1016)], [[(79, 1016)]], [[(79, 1016), (135, 1008)]]],
+            [[[(79, 1016), (135, 1008)], None], [[(79, 1016), (135, 1008)], []], [[(79, 1016), (135, 1008)], (480, 1023)], [[(79, 1016), (135, 1008)], [(480, 1023)]]],
+            [[None, [(480, 1023)]]],
+        ]
+
+        batch_image = [image] * 4
+        batch_text = [texts[0], texts[1], texts[1], texts[2]]
+        batch_bboxes = [
+            None,  # no phrase
+            [[]],  # 1 phrase: no bbox
+            [(79, 1016)],  # 1 phrase: 1 bbox
+            [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
+        ]
 
         # fmt: off
         expected_texts = [
@@ -199,144 +221,14 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         ]
         # fmt: on
 
-        # no phrase
-        a = processor.preprocess_text(images=None, texts=texts[0], bboxes=None)
-        assert a == expected_texts[0]
-        a = processor(images=None, text=texts[0], bboxes=None)
-        assert a.input_ids == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # no phrase
-        a = processor.preprocess_text(images=None, texts=texts[0], bboxes=[])
-        assert a == expected_texts[0]
-        a = processor(images=None, text=texts[0], bboxes=[])
-        assert a.input_ids == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # 1 phrase: no bbox
-        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[None])
-        assert a == expected_texts[1]
-        a = processor(images=None, text=texts[1], bboxes=[None])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # 1 phrase: no bbox
-        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[]])
-        assert a == expected_texts[1]
-        a = processor(images=None, text=texts[1], bboxes=[[]])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # could not contain `[None]`
-        with pytest.raises(ValueError):
-            _ = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
-
-        # 1 phrase: 1 bbox
-        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[(79, 1016)])
-        assert a == expected_texts[2]
-        a = processor(images=None, text=texts[1], bboxes=[(79, 1016)])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # 1 phrase: 1 bbox
-        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016)]])
-        assert a == expected_texts[2]
-        a = processor(images=None, text=texts[1], bboxes=[[(79, 1016)]])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # 1 phrase: 2 bboxes
-        a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[(79, 1016), (135, 1008)]])
-        assert a == expected_texts[3]
-        a = processor(images=None, text=texts[1], bboxes=[[(79, 1016), (135, 1008)]])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2]
-
-        # 2 phrase: 2 bboxes + no bbox
-        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], None])
-        assert a == expected_texts[4]
-        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], None])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2]
-
-        # 2 phrase: 2 bboxes + no bbox
-        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
-        assert a == expected_texts[4]
-        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2]
-
-        # could not contain `[None]`
-        with pytest.raises(ValueError):
-            _ = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
-
-        # 2 phrase: 2 bboxes + 1 bbox
-        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
-        assert a == expected_texts[5]
-        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
-
-        # 2 phrase: 2 bboxes + 1 bbox
-        a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [(480, 1023)]])
-        assert a == expected_texts[5]
-        a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], [(480, 1023)]])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
-
-        # 2 phrase: no box (as already specified in the text) + 1 bbox
-        a = processor.preprocess_text(images=None, texts=texts[3], bboxes=[None, [(480, 1023)]])
-        assert a == expected_texts[5]
-        a = processor(images=None, text=texts[3], bboxes=[None, [(480, 1023)]])
-        assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
-
-        # batch
-        a = processor.preprocess_text(
-            images=None,
-            texts=[texts[0], texts[1], texts[1], texts[2]],
-            bboxes=[
-                None,  # no phrase
-                [[]],  # 1 phrase: no bbox
-                [(79, 1016)],  # 1 phrase: 1 bbox
-                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
-            ]
-        )
-        assert a == [expected_texts[0], expected_texts[1], expected_texts[2], expected_texts[5]]
-        a = processor(
-            images=None,
-            text=[texts[0], texts[1], texts[1], texts[2]],
-            bboxes=[
-                None,  # no phrase
-                [[]],  # 1 phrase: no bbox
-                [(79, 1016)],  # 1 phrase: 1 bbox
-                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
-            ]
-        )
-        assert a.input_ids == [
+        expected_input_ids = [
             [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2],
             [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2],
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2],
-            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],  # noqa
+            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2],
+            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2],
+            [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],
         ]
-
-        a = processor(
-            images=None,
-            text=[texts[0], texts[1], texts[1], texts[2]],
-            bboxes=[
-                None,  # no phrase
-                [[]],  # 1 phrase: no bbox
-                [(79, 1016)],  # 1 phrase: 1 bbox
-                [[(79, 1016), (135, 1008)], (480, 1023)],  # 2 phrase: 2 bboxes + 1 bbox
-            ],
-            return_tensors="pt",
-            padding=True,
-        )
-        assert a.input_ids.numpy().tolist()[0] == [0, 64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2] + [1] * (28 - 12)
-        assert a.input_ids.numpy().tolist()[-1] == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2]
-
-        # TODO: add to the official repo.
-        url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
-        import requests; image = Image.open(requests.get(url, stream=True).raw)
-
-        # test with image
-        num_image_tokens = 64
-        # (`image` type is not checked in `preprocess_text`. It works as long as it is not `None`.)
-        a = processor.preprocess_text(images=image, texts=texts[0], bboxes=None, num_image_tokens=num_image_tokens)
-        assert a == "".join(["<image>"] + ["<image>"] * num_image_tokens + ["</image>"] + [expected_texts[0]])
-
-        a = processor(images=image, text=texts[0], bboxes=None)
-        assert a.pixel_values[0].shape == (3, 224, 224)
-        assert a.input_ids == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + [64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
-        assert a.image_features_mask == [0] * 2 + [1] * num_image_tokens + [0] + [0] * 11
 
         EXPECTED_PIXEL_VALUES = np.array(
             [
@@ -357,4 +249,109 @@ class Kosmos2ProcessorTest(unittest.TestCase):
                 ],
             ]
         )
+
+        def check(texts, bboxes, expected_texts, expected_input_ids):
+
+            processed_texts = processor.preprocess_text(images=None, texts=texts, bboxes=bboxes)
+            assert processed_texts == expected_texts
+
+            outputs = processor(images=None, text=texts, bboxes=bboxes)
+            assert outputs.input_ids == expected_input_ids
+
+        # no phrase
+        check(texts[0], bboxes[0][0], expected_texts[0], expected_input_ids[0])
+
+        # no phrase
+        check(texts[0], bboxes[0][1], expected_texts[0], expected_input_ids[0])
+
+        # 1 phrase: no bbox
+        check(texts[1], bboxes[1][0], expected_texts[1], expected_input_ids[1])
+
+        # 1 phrase: no bbox
+        check(texts[1], bboxes[1][1], expected_texts[1], expected_input_ids[1])
+
+        # 1 phrase: 1 bbox
+        check(texts[1], bboxes[1][2], expected_texts[2], expected_input_ids[2])
+
+        # 1 phrase: 1 bbox
+        check(texts[1], bboxes[1][3], expected_texts[2], expected_input_ids[2])
+
+        # 1 phrase: 2 bboxes
+        check(texts[1], bboxes[1][4], expected_texts[3], expected_input_ids[3])
+
+        # could not contain `[None]`
+        with pytest.raises(ValueError):
+            _ = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
+
+        # 2 phrase: 2 bboxes + no bbox
+        check(texts[2], bboxes[2][0], expected_texts[4], expected_input_ids[4])
+
+        # 2 phrase: 2 bboxes + no bbox
+        check(texts[2], bboxes[2][1], expected_texts[4], expected_input_ids[4])
+
+        # 2 phrase: 2 bboxes + 1 bbox
+        check(texts[2], bboxes[2][2], expected_texts[5], expected_input_ids[5])
+
+        # 2 phrase: 2 bboxes + 1 bbox
+        check(texts[2], bboxes[2][3], expected_texts[5], expected_input_ids[5])
+
+        # 2 phrase: no box (as already specified in the text) + 1 bbox
+        check(texts[3], bboxes[3][0], expected_texts[5], expected_input_ids[5])
+
+        # could not contain `[None]`
+        with pytest.raises(ValueError):
+            _ = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
+
+        # batch
+        a = processor.preprocess_text(
+            images=None,
+            texts=batch_text,
+            bboxes=batch_bboxes,
+        )
+        assert a == [expected_texts[0], expected_texts[1], expected_texts[2], expected_texts[5]]
+        a = processor(
+            images=None,
+            text=batch_text,
+            bboxes=batch_bboxes,
+        )
+        assert a.input_ids == [
+            expected_input_ids[0], expected_input_ids[1], expected_input_ids[2], expected_input_ids[5]
+        ]
+
+        # batch with padding (with `return_tensors`)
+        a = processor(
+            images=None,
+            text=batch_text,
+            bboxes=batch_bboxes,
+            return_tensors="pt",
+            padding=True,
+        )
+        assert a.input_ids.numpy().tolist()[0] == expected_input_ids[0] + [1] * (len(expected_input_ids[5]) - len(expected_input_ids[0]))
+        assert a.input_ids.numpy().tolist()[-1] == expected_input_ids[5]
+
+        # test with image
+        num_image_tokens = 64
+        # (`image` type is not checked in `preprocess_text`. It works as long as it is not `None`.)
+        a = processor.preprocess_text(images=image, texts=texts[0], bboxes=None, num_image_tokens=num_image_tokens)
+        assert a == "".join(["<image>"] + ["<image>"] * num_image_tokens + ["</image>"] + [expected_texts[0]])
+
+        a = processor(images=image, text=texts[0], bboxes=None)
+        assert a.pixel_values[0].shape == (3, 224, 224)
+        assert a.input_ids == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + expected_input_ids[0][1:]
+        assert a.image_features_mask == [0] * 2 + [1] * num_image_tokens + [0] + [0] * (len(expected_input_ids[0]) - 1)
         assert np.allclose(a.pixel_values[0][0:3, 0:3, 0:3], EXPECTED_PIXEL_VALUES, atol=1e-6)
+
+        # test with image in batch
+        a = processor(
+            images=batch_image,
+            text=batch_text,
+            bboxes=batch_bboxes,
+            return_tensors="pt",
+            padding=True,
+        )
+        assert a.pixel_values.shape == (4, 3, 224, 224)
+        assert a.input_ids.numpy().tolist()[0] == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + expected_input_ids[0][1:] + [1] * (len(expected_input_ids[5]) - len(expected_input_ids[0]))
+        assert a.input_ids.numpy().tolist()[-1] == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + expected_input_ids[5][1:]
+
+        assert a.image_features_mask.numpy().tolist() == [[0] * 2 + [1] * num_image_tokens + [0] + [0] * (len(expected_input_ids[5]) - 1)] * len(batch_image)
+        assert np.allclose(a.pixel_values[:, 0:3, 0:3, 0:3].numpy(), [EXPECTED_PIXEL_VALUES] * len(batch_image), atol=1e-6)
