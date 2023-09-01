@@ -182,9 +182,6 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         ]
         # fmt: on
 
-        # TODO: add to the official repo.
-        image = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
-
         # fmt: off
         expected_texts = [
             # no phrase
@@ -226,8 +223,9 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         a = processor(images=None, text=texts[1], bboxes=[[]])
         assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 1357, 12, 10, 770, 9, 4464, 4, 2]
 
-        # a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
-        # assert a == expected_texts[1]
+        # could not contain `[None]`
+        with pytest.raises(ValueError):
+            _ = processor.preprocess_text(images=None, texts=texts[1], bboxes=[[None]])
 
         # 1 phrase: 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[1], bboxes=[(79, 1016)])
@@ -259,8 +257,9 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         a = processor(images=None, text=texts[2], bboxes=[[(79, 1016), (135, 1008)], []])
         assert a.input_ids == [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 106, 4, 2]
 
-        # a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
-        # assert a == expected_texts[4]
+        # could not contain `[None]`
+        with pytest.raises(ValueError):
+            _ = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], [None]])
 
         # 2 phrase: 2 bboxes + 1 bbox
         a = processor.preprocess_text(images=None, texts=texts[2], bboxes=[[(79, 1016), (135, 1008)], (480, 1023)])
@@ -308,3 +307,18 @@ class Kosmos2ProcessorTest(unittest.TestCase):
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64010, 1357, 12, 10, 770, 9, 4464, 4, 2],
             [0, 64012, 64007, 1264, 17772, 64008, 64009, 64092, 65029, 64011, 64148, 65021, 64010, 1357, 12, 10, 770, 9, 64007, 4464, 64008, 64009, 64493, 65036, 64010, 106, 4, 2],  # noqa
         ]
+
+        # TODO: add to the official repo.
+        image = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
+
+        import requests; image = Image.open(requests.get(image, stream=True).raw)
+        # TODO: who image being string works?
+
+        num_image_tokens = 64
+        a = processor.preprocess_text(images=image, texts=texts[0], bboxes=None, num_image_tokens=num_image_tokens)
+        assert a == "".join(["<image>"] + ["<image>"] * num_image_tokens + ["</image>"] + [expected_texts[0]])
+
+        a = processor(images=image, text=texts[0], bboxes=None)
+        assert a.pixel_values[0].shape == (3, 224, 224)
+        assert a.input_ids == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + [64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
+        assert a.image_features_mask == [0] * 2 + [1] * num_image_tokens + [0] + [0] * 11
