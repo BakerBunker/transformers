@@ -309,12 +309,11 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         ]
 
         # TODO: add to the official repo.
-        image = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
-
-        import requests; image = Image.open(requests.get(image, stream=True).raw)
-        # TODO: who image being string works?
+        url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/two_dogs.jpg"
+        import requests; image = Image.open(requests.get(url, stream=True).raw)
 
         num_image_tokens = 64
+        # (`image` type is not checked in `preprocess_text`. It works as long as it is not `None`.)
         a = processor.preprocess_text(images=image, texts=texts[0], bboxes=None, num_image_tokens=num_image_tokens)
         assert a == "".join(["<image>"] + ["<image>"] * num_image_tokens + ["</image>"] + [expected_texts[0]])
 
@@ -322,3 +321,24 @@ class Kosmos2ProcessorTest(unittest.TestCase):
         assert a.pixel_values[0].shape == (3, 224, 224)
         assert a.input_ids == [0, 64003] + list(range(4, 4 + num_image_tokens)) + [64004] + [64012, 1264, 17772, 1357, 12, 10, 770, 9, 4464, 4, 2]
         assert a.image_features_mask == [0] * 2 + [1] * num_image_tokens + [0] + [0] * 11
+
+        EXPECTED_PIXEL_VALUES = np.array(
+            [
+                [
+                    [-0.65358526, -0.6389868,  -0.6243884],
+                    [-0.65358526, -0.6389868,  -0.6243884],
+                    [-0.6389868,  -0.60978997, -0.5805931],
+                ],
+                [
+                    [-0.20629698, -0.1912892,  -0.1912892],
+                    [-0.20629698, -0.1912892,  -0.17628144],
+                    [-0.22130474, -0.20629698, -0.17628144],
+                ],
+                [
+                    [-0.58435565, -0.57013553, -0.57013553],
+                    [-0.58435565, -0.57013553, -0.5559154],
+                    [-0.58435565, -0.57013553, -0.54169536],
+                ],
+            ]
+        )
+        assert np.allclose(a.pixel_values[0][0:3, 0:3, 0:3], EXPECTED_PIXEL_VALUES, atol=1e-6)
