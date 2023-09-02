@@ -15,6 +15,7 @@
 """ Testing suite for the PyTorch KOSMOS-2 model. """
 
 
+import copy
 import inspect
 import os
 import tempfile
@@ -250,7 +251,6 @@ class Kosmos2ModelTester:
             "attention_mask": attention_mask,
             "image_features_mask": image_features_mask,
             "pixel_values": pixel_values,
-            "return_loss": True,
         }
         return config, inputs_dict
 
@@ -265,6 +265,17 @@ class Kosmos2ModelTest(ModelTesterMixin, unittest.TestCase):
     test_pruning = False
     test_resize_embeddings = False
     test_attention_outputs = False
+
+    def _prepare_for_class(self, inputs_dict, model_class, return_labels=False):
+        inputs_dict = copy.deepcopy(inputs_dict)
+
+        if return_labels:
+            if model_class.__name__ == "Kosmos2ForConditionalGeneration":
+                inputs_dict["labels"] = torch.zeros(
+                    (self.model_tester.text_model_tester.batch_size, self.model_tester.text_model_tester.seq_length), dtype=torch.long, device=torch_device
+                )
+
+        return inputs_dict
 
     def setUp(self):
         self.model_tester = Kosmos2ModelTester(self)
@@ -284,6 +295,107 @@ class Kosmos2ModelTest(ModelTesterMixin, unittest.TestCase):
     def test_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
         self.model_tester.create_and_check_model(*config_and_inputs)
+
+    def test_forward_signature(self):
+        config, _ = self.model_tester.prepare_config_and_inputs_for_common()
+
+        for model_class in self.all_model_classes:
+            model = model_class(config)
+            signature = inspect.signature(model.forward)
+            # signature.parameters is an OrderedDict => so arg_names order is deterministic
+            arg_names = [*signature.parameters.keys()]
+
+            expected_arg_names = ["pixel_values"]
+            self.assertListEqual(arg_names[:1], expected_arg_names)
+
+    # over... from common
+    def test_hidden_states_output(self):
+        def check_hidden_states_output(inputs_dict, config, model_class):
+            model = model_class(config)
+            model.to(torch_device)
+            model.eval()
+
+            with torch.no_grad():
+                outputs = model(**self._prepare_for_class(inputs_dict, model_class))
+
+            hidden_states = outputs.hidden_states
+
+            expected_num_layers = getattr(
+                self.model_tester, "expected_num_hidden_layers", self.model_tester.text_model_tester.num_hidden_layers + 1
+            )
+            self.assertEqual(len(hidden_states), expected_num_layers)
+
+            seq_length = self.model_tester.text_model_tester.seq_length
+
+            self.assertListEqual(
+                list(hidden_states[0].shape[-2:]),
+                [seq_length, self.model_tester.text_model_tester.hidden_size],
+            )
+
+        config, inputs_dict = self.model_tester.prepare_config_and_inputs_for_common()
+
+        for model_class in self.all_model_classes:
+            inputs_dict["output_hidden_states"] = True
+            check_hidden_states_output(inputs_dict, config, model_class)
+
+            # check that output_hidden_states also work using config
+            del inputs_dict["output_hidden_states"]
+            config.output_hidden_states = True
+
+            check_hidden_states_output(inputs_dict, config, model_class)
+
+    def test_tie_model_weights(self):
+        if not self.test_torchscript:
+            return
+
+        config, inputs_dict = self.model_tester.prepare_config_and_inputs_for_common()
+
+        def check_same_values(layer_1, layer_2):
+            equal = True
+            for p1, p2 in zip(layer_1.weight, layer_2.weight):
+                if p1.data.ne(p2.data).sum() > 0:
+                    equal = False
+            return equal
+
+        for model_class in self.all_model_classes:
+            config.torchscript = True
+            model_not_tied = model_class(config)
+            if model_not_tied.get_output_embeddings() is None:
+                continue
+
+            config_tied = copy.deepcopy(config)
+            config_tied.torchscript = False
+            model_tied = model_class(config_tied)
+            params_tied = list(model_tied.parameters())
+            # Check that the embedding layer and decoding layer are the same in size and in value
+            # self.assertTrue(check_same_values(embeddings, decoding))
+
+            # # Check that after modification, they remain the same.
+            # embeddings.weight.data.div_(2)
+            # # Check that the embedding layer and decoding layer are the same in size and in value
+            # self.assertTrue(embeddings.weight.shape, decoding.weight.shape)
+            # self.assertTrue(check_same_values(embeddings, decoding))
+
+            # # Check that after modification, they remain the same.
+            # decoding.weight.data.div_(4)
+            # # Check that the embedding layer and decoding layer are the same in size and in value
+            # self.assertTrue(embeddings.weight.shape, decoding.weight.shape)
+            # self.assertTrue(check_same_values(embeddings, decoding))
+
+            # Check that after resize they remain tied.
+            model_tied.resize_token_embeddings(config.text_config.vocab_size + 10)
+            params_tied_2 = list(model_tied.parameters())
+            self.assertEqual(len(params_tied_2), len(params_tied))
+
+            # decoding.weight.data.mul_(20)
+            # # Check that the embedding layer and decoding layer are the same in size and in value
+            # self.assertTrue(model.transformer.wte.weight.shape, model.lm_head.weight.shape)
+            # self.assertTrue(check_same_values(model.transformer.wte, model.lm_head))
+
+    # TODO: Implement `_init_weights` and remove the skip.
+    @unittest.skip("`_init_weights` is not yet implemented for `KOSMOS-2` model.")
+    def test_initialization(self):
+        super().test_initialization()
 
     @slow
     def test_model_from_pretrained(self):
