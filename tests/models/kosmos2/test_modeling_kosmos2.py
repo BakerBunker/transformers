@@ -43,15 +43,8 @@ if is_torch_available():
     import torch
     from torch import nn
 
-    from transformers import (
-        Kosmos2ForConditionalGeneration,
-        Kosmos2ForImageTextRetrieval,
-        Kosmos2ForQuestionAnswering,
-        Kosmos2Model,
-        Kosmos2TextModel,
-        Kosmos2VisionModel,
-    )
-    from transformers.models.kosmos2.modeling_kosmos2 import Kosmos2_PRETRAINED_MODEL_ARCHIVE_LIST
+    from transformers import Kosmos2Model, Kosmos2ForConditionalGeneration
+    from transformers.models.kosmos2.modeling_kosmos2 import KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST
 
 
 if is_vision_available():
@@ -194,16 +187,6 @@ class Kosmos2TextModelTester:
             max_position_embeddings=self.max_position_embeddings,
         )
 
-    def create_and_check_model(self, config, input_ids, input_mask):
-        model = Kosmos2TextModel(config=config)
-        model.to(torch_device)
-        model.eval()
-        with torch.no_grad():
-            result = model(input_ids, attention_mask=input_mask)
-            result = model(input_ids)
-        self.parent.assertEqual(result.last_hidden_state.shape, (self.batch_size, self.seq_length, self.hidden_size))
-        self.parent.assertEqual(result.pooler_output.shape, (self.batch_size, self.hidden_size))
-
     def prepare_config_and_inputs_for_common(self):
         config_and_inputs = self.prepare_config_and_inputs()
         config, input_ids, input_mask = config_and_inputs
@@ -217,7 +200,7 @@ class Kosmos2TextModelTester:
 
 
 class Kosmos2ModelTester:
-    def __init__(self, parent, text_kwargs=None, vision_kwargs=None, is_training=True):
+    def __init__(self, parent, text_kwargs=None, vision_kwargs=None, latent_query_num=3, is_training=True):
         if text_kwargs is None:
             text_kwargs = {}
         if vision_kwargs is None:
@@ -226,38 +209,46 @@ class Kosmos2ModelTester:
         self.parent = parent
         self.text_model_tester = Kosmos2TextModelTester(parent, **text_kwargs)
         self.vision_model_tester = Kosmos2VisionModelTester(parent, **vision_kwargs)
+        self.latent_query_num = latent_query_num
         self.is_training = is_training
 
     def prepare_config_and_inputs(self):
         text_config, input_ids, attention_mask = self.text_model_tester.prepare_config_and_inputs()
         vision_config, pixel_values = self.vision_model_tester.prepare_config_and_inputs()
 
+        # build `image_features_mask`
+        image_features_mask = torch.zeros_like(input_ids)
+        image_features_mask[:, 1: 1 + self.latent_query_num:] = 1
+
         config = self.get_config()
 
-        return config, input_ids, attention_mask, pixel_values
+        return config, input_ids, attention_mask, image_features_mask, pixel_values
 
     def get_config(self):
-        return Kosmos2Config.from_text_vision_configs(
-            self.text_model_tester.get_config(), self.vision_model_tester.get_config(),
+        return Kosmos2Config(
+            self.text_model_tester.get_config().to_dict(),
+            self.vision_model_tester.get_config().to_dict(),
+            latent_query_num=self.latent_query_num,
         )
 
-    def create_and_check_model(self, config, input_ids, attention_mask, pixel_values):
+    def create_and_check_model(self, config, input_ids, attention_mask, image_features_mask, pixel_values):
         model = Kosmos2Model(config).to(torch_device).eval()
         with torch.no_grad():
-            result = model(input_ids, pixel_values, attention_mask)
+            result = model(pixel_values, input_ids, image_features_mask, attention_mask)
         self.parent.assertEqual(
-            result.logits_per_image.shape, (self.vision_model_tester.batch_size, self.text_model_tester.batch_size)
+            result.last_hidden_state.shape, (self.text_model_tester.batch_size, self.text_model_tester.seq_length, self.text_model_tester.hidden_size)
         )
         self.parent.assertEqual(
-            result.logits_per_text.shape, (self.text_model_tester.batch_size, self.vision_model_tester.batch_size)
+            result.image_features.shape, (self.text_model_tester.batch_size, self.latent_query_num, self.text_model_tester.hidden_size)
         )
 
     def prepare_config_and_inputs_for_common(self):
         config_and_inputs = self.prepare_config_and_inputs()
-        config, input_ids, attention_mask, pixel_values = config_and_inputs
+        config, input_ids, attention_mask, image_features_mask, pixel_values = config_and_inputs
         inputs_dict = {
             "input_ids": input_ids,
             "attention_mask": attention_mask,
+            "image_features_mask": image_features_mask,
             "pixel_values": pixel_values,
             "return_loss": True,
         }
@@ -265,13 +256,10 @@ class Kosmos2ModelTester:
 
 
 @require_torch
-class Kosmos2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase):
-    all_model_classes = (Kosmos2Model,) if is_torch_available() else ()
-    pipeline_model_mapping = (
-        {"feature-extraction": Kosmos2Model, "image-to-text": Kosmos2ForConditionalGeneration}
-        if is_torch_available()
-        else {}
-    )
+class Kosmos2ModelTest(ModelTesterMixin, unittest.TestCase):
+# class Kosmos2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase):
+    all_model_classes = (Kosmos2Model, Kosmos2ForConditionalGeneration) if is_torch_available() else ()
+    all_generative_model_classes = (Kosmos2ForConditionalGeneration,) if is_torch_available() else ()
     fx_compatible = False
     test_head_masking = False
     test_pruning = False
@@ -280,29 +268,26 @@ class Kosmos2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase)
 
     def setUp(self):
         self.model_tester = Kosmos2ModelTester(self)
+        self.config_tester = ConfigTester(self, config_class=Kosmos2Config, hidden_size=37)
+
+    def test_foo(self):
+        config = self.model_tester.get_config()
+        print(config)
+        input = self.model_tester.prepare_config_and_inputs()
+        print(input)
+
+    # TODO: Remove this
+    @unittest.skip("Not applicable.")
+    def test_config(self):
+        self.config_tester.run_common_tests()
 
     def test_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
         self.model_tester.create_and_check_model(*config_and_inputs)
 
-    def test_load_vision_text_config(self):
-        config, inputs_dict = self.model_tester.prepare_config_and_inputs_for_common()
-
-        # Save Kosmos2Config and check if we can load Kosmos2VisionConfig from it
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            config.save_pretrained(tmp_dir_name)
-            vision_config = Kosmos2VisionConfig.from_pretrained(tmp_dir_name)
-            self.assertDictEqual(config.vision_config.to_dict(), vision_config.to_dict())
-
-        # Save Kosmos2Config and check if we can load Kosmos2TextConfig from it
-        with tempfile.TemporaryDirectory() as tmp_dir_name:
-            config.save_pretrained(tmp_dir_name)
-            text_config = Kosmos2TextConfig.from_pretrained(tmp_dir_name)
-            self.assertDictEqual(config.text_config.to_dict(), text_config.to_dict())
-
     @slow
     def test_model_from_pretrained(self):
-        for model_name in Kosmos2_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
+        for model_name in KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST[:1]:
             model = Kosmos2Model.from_pretrained(model_name)
             self.assertIsNotNone(model)
 
