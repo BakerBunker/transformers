@@ -26,7 +26,7 @@ import requests
 
 from transformers.models.kosmos2.configuration_kosmos2 import Kosmos2TextConfig, Kosmos2VisionConfig
 from transformers import Kosmos2Config
-from transformers.testing_utils import require_torch, require_torch_gpu, require_vision, slow, torch_device
+from transformers.testing_utils import require_torch, require_vision, slow, torch_device
 from transformers.utils import is_torch_available, is_vision_available
 
 from ...test_configuration_common import ConfigTester
@@ -37,12 +37,10 @@ from ...test_modeling_common import (
     ids_tensor,
     random_attention_mask,
 )
-from ...test_pipeline_mixin import PipelineTesterMixin
 
 
 if is_torch_available():
     import torch
-    from torch import nn
 
     from transformers import Kosmos2Model, Kosmos2ForConditionalGeneration
     from transformers.models.kosmos2.modeling_kosmos2 import KOSMOS2_PRETRAINED_MODEL_ARCHIVE_LIST
@@ -50,8 +48,6 @@ if is_torch_available():
 
 if is_vision_available():
     from PIL import Image
-
-    from transformers import Kosmos2Processor
 
 
 class Kosmos2VisionModelTester:
@@ -116,11 +112,6 @@ class Kosmos2VisionModelTester:
         config, pixel_values = config_and_inputs
         inputs_dict = {"pixel_values": pixel_values}
         return config, inputs_dict
-
-
-# @require_torch
-# class Kosmos2VisionModelTest(ModelTesterMixin, unittest.TestCase):
-#     pass
 
 
 class Kosmos2TextModelTester:
@@ -195,11 +186,6 @@ class Kosmos2TextModelTester:
         return config, inputs_dict
 
 
-# @require_torch
-# class Kosmos2TextModelTest(ModelTesterMixin, unittest.TestCase):
-#     pass
-
-
 class Kosmos2ModelTester:
     def __init__(self, parent, text_kwargs=None, vision_kwargs=None, latent_query_num=3, is_training=True):
         if text_kwargs is None:
@@ -257,7 +243,6 @@ class Kosmos2ModelTester:
 
 @require_torch
 class Kosmos2ModelTest(ModelTesterMixin, unittest.TestCase):
-# class Kosmos2ModelTest(ModelTesterMixin, PipelineTesterMixin, unittest.TestCase):
     all_model_classes = (Kosmos2Model, Kosmos2ForConditionalGeneration) if is_torch_available() else ()
     all_generative_model_classes = (Kosmos2ForConditionalGeneration,) if is_torch_available() else ()
     fx_compatible = False
@@ -281,21 +266,15 @@ class Kosmos2ModelTest(ModelTesterMixin, unittest.TestCase):
         self.model_tester = Kosmos2ModelTester(self)
         self.config_tester = ConfigTester(self, config_class=Kosmos2Config, hidden_size=37)
 
-    # TODO: Implement `_init_weights` and remove the skip.
-    @unittest.skip("`_init_weights` is not yet implemented for `KOSMOS-2` model.")
-    def test_initialization(self):
-        super().test_initialization()
-
-    def test_foo(self):
-        config = self.model_tester.get_config()
-        print(config)
-        input = self.model_tester.prepare_config_and_inputs()
-        print(input)
-
     # TODO: Remove this
     @unittest.skip("Not applicable.")
     def test_config(self):
         self.config_tester.run_common_tests()
+
+    # TODO: Implement `_init_weights` and remove the skip.
+    @unittest.skip("`_init_weights` is not yet implemented for `KOSMOS-2` model.")
+    def test_initialization(self):
+        super().test_initialization()
 
     def test_model(self):
         config_and_inputs = self.model_tester.prepare_config_and_inputs()
