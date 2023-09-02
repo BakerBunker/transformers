@@ -513,10 +513,37 @@ class Kosmos2ModelIntegrationTest(unittest.TestCase):
         prompt = "<grounding>An image of"
         scores, generated_ids, generated_text, processed_text, final_text, entities = run_example(prompt)
 
-        assert np.allclose(torch.concat(scores[1:4])[:3, :3].numpy(), np.array([[-1.5672581195831299, -5.007406711578369, 4.36448860168457], [-2.147017002105713, -4.966302871704102, 4.592559337615967], [-0.9352350831031799, -4.688288688659668, 6.240612983703613]]), atol=1e-5)
-        assert np.allclose(torch.concat(scores[-3:])[-3:, -3:].numpy(), np.array([[2.9916205406188965, 2.481820583343506, 4.646594524383545], [-2.8381078243255615, -2.9687185287475586, -2.6926779747009277], [-2.8909168243408203, -3.2228589057922363, -1.7056822776794434]]), atol=1e-5)
+        assert np.allclose(
+            torch.concat(scores[1:4])[:3, :3].numpy(),
+            np.array(
+                [
+                    [-1.5672581195831299, -5.007406711578369, 4.36448860168457],
+                    [-2.147017002105713, -4.966302871704102, 4.592559337615967],
+                    [-0.9352350831031799, -4.688288688659668, 6.240612983703613],
+                ]
+            ),
+            atol=1e-5,
+        )
+        assert np.allclose(
+            torch.concat(scores[-3:])[-3:, -3:].numpy(),
+            np.array(
+                [
+                    [2.9916205406188965, 2.481820583343506, 4.646594524383545],
+                    [-2.8381078243255615, -2.9687185287475586, -2.6926779747009277],
+                    [-2.8909168243408203, -3.2228589057922363, -1.7056822776794434],
+                ]
+            ),
+            atol=1e-5,
+        )
 
-        assert generated_ids.numpy().tolist() == [[0, 64003, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 64004, 64012, 712, 1648, 9, 64007, 10, 43867, 64008, 64009, 64057, 64876, 64010, 5950, 597, 32, 64007, 10, 646, 64008, 64009, 64018, 64924, 64010, 4, 2]]
+        assert generated_ids.numpy().tolist() == [
+            [
+                0, 64003, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+                55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 64004, 64012, 712, 1648, 9, 64007, 10, 43867, 64008,
+                64009, 64057, 64876, 64010, 5950, 597, 32, 64007, 10, 646, 64008, 64009, 64018, 64924, 64010, 4, 2
+            ]
+        ]
 
         assert processed_text == (
             "<grounding> An image of<phrase> a snowman</phrase><object><patch_index_0044><patch_index_0863></object> "
@@ -532,13 +559,58 @@ class Kosmos2ModelIntegrationTest(unittest.TestCase):
         prompt = "<grounding>Describe this image in detail:"
         scores, generated_ids, generated_text, processed_text, final_text, entities = run_example(prompt)
 
-        assert np.allclose(torch.concat(scores[1:4])[:3, :3].numpy(), np.array([[-0.9093570113182068, -4.578373908996582, 5.96360969543457], [2.452126979827881, -4.090598106384277, 8.738677024841309], [-0.7624598741531372, -4.771658897399902, 6.576295852661133]]), atol=1e-5)
-        assert np.allclose(torch.concat(scores[-3:])[-3:, -3:].numpy(), np.array([[-1.673659086227417, -2.162452220916748, -1.95430588722229], [-2.006824493408203, -2.2038745880126953, -1.24686861038208], [-3.2783470153808594, -2.814181089401245, -1.390632152557373]]), atol=1e-5)
+        assert np.allclose(
+            torch.concat(scores[1:4])[:3, :3].numpy(),
+            np.array(
+                [
+                    [-0.9093570113182068, -4.578373908996582, 5.96360969543457],
+                    [2.452126979827881, -4.090598106384277, 8.738677024841309],
+                    [-0.7624598741531372, -4.771658897399902, 6.576295852661133],
+                ]
+            ),
+            atol=1e-5,
+        )
+        assert np.allclose(
+            torch.concat(scores[-3:])[-3:, -3:].numpy(),
+            np.array(
+                [
+                    [-1.673659086227417, -2.162452220916748, -1.95430588722229],
+                    [-2.006824493408203, -2.2038745880126953, -1.24686861038208],
+                    [-3.2783470153808594, -2.814181089401245, -1.390632152557373],
+                ]
+            ),
+            atol=1e-5,
+        )
 
-        assert generated_ids.numpy().tolist() == [[0, 64003, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 64004, 64012, 34645, 247, 38, 1648, 12, 3391, 55, 24, 1648, 1338, 10, 43867, 1280, 32, 64007, 10, 30879, 64008, 64009, 64018, 65020, 64010, 12, 5, 1842, 4, 71, 17, 1679, 64007, 10, 3958, 64008, 64009, 64061, 64263, 64010, 6, 64007, 15719, 64008, 64009, 64253, 64617, 64010, 6, 8, 64007, 9626, 64008, 64009, 64413, 64545, 64010, 6, 23, 64007, 10, 4363, 64008, 64009, 64623, 64885, 64010, 2255, 8, 64007, 10, 3486, 64008, 64009, 64809, 65036, 64010, 1560, 2255, 4, 24, 43867, 1684, 7, 27, 3774, 5, 10356, 9, 5, 646, 6, 8, 22, 1684, 7, 30, 10, 2007, 8, 16239, 4337, 4, 2]]
+        assert generated_ids.numpy().tolist() == [
+            [
+                0, 64003, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28,
+                29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54,
+                55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 64004, 64012, 34645, 247, 38, 1648, 12, 3391, 55,
+                24, 1648, 1338, 10, 43867, 1280, 32, 64007, 10, 30879, 64008, 64009, 64018, 65020, 64010, 12, 5, 1842,
+                4, 71, 17, 1679, 64007, 10, 3958, 64008, 64009, 64061, 64263, 64010, 6, 64007, 15719, 64008, 64009,
+                64253, 64617, 64010, 6, 8, 64007, 9626, 64008, 64009, 64413, 64545, 64010, 6, 23, 64007, 10, 4363,
+                64008, 64009, 64623, 64885, 64010, 2255, 8, 64007, 10, 3486, 64008, 64009, 64809, 65036, 64010, 1560,
+                2255, 4, 24, 43867, 1684, 7, 27, 3774, 5, 10356, 9, 5, 646, 6, 8, 22, 1684, 7, 30, 10, 2007, 8, 16239,
+                4337, 4, 2
+            ]
+        ]
 
-        assert processed_text == "<grounding> Describe this image in detail: The image features a snowman sitting by<phrase> a campfire</phrase><object><patch_index_0005><patch_index_1007></object> in the snow. He is wearing<phrase> a hat</phrase><object><patch_index_0048><patch_index_0250></object>,<phrase> scarf</phrase><object><patch_index_0240><patch_index_0604></object>, and<phrase> gloves</phrase><object><patch_index_0400><patch_index_0532></object>, with<phrase> a pot</phrase><object><patch_index_0610><patch_index_0872></object> nearby and<phrase> a cup</phrase><object><patch_index_0796><patch_index_1023></object> placed nearby. The snowman appears to be enjoying the warmth of the fire, and it appears to have a warm and cozy atmosphere."
-        assert final_text == "Describe this image in detail: The image features a snowman sitting by a campfire in the snow. He is wearing a hat, scarf, and gloves, with a pot nearby and a cup placed nearby. The snowman appears to be enjoying the warmth of the fire, and it appears to have a warm and cozy atmosphere."
+        assert processed_text == (
+            "<grounding> Describe this image in detail: The image features a snowman sitting by<phrase> a campfire"
+            "</phrase><object><patch_index_0005><patch_index_1007></object> in the snow. He is wearing<phrase> a hat"
+            "</phrase><object><patch_index_0048><patch_index_0250></object>,<phrase> scarf</phrase><object>"
+            "<patch_index_0240><patch_index_0604></object>, and<phrase> gloves</phrase><object><patch_index_0400>"
+            "<patch_index_0532></object>, with<phrase> a pot</phrase><object><patch_index_0610><patch_index_0872>"
+            "</object> nearby and<phrase> a cup</phrase><object><patch_index_0796><patch_index_1023></object> placed "
+            "nearby. The snowman appears to be enjoying the warmth of the fire, and it appears to have a warm and cozy "
+            "atmosphere."
+        )
+        assert final_text == (
+            "Describe this image in detail: The image features a snowman sitting by a campfire in the snow. He is "
+            "wearing a hat, scarf, and gloves, with a pot nearby and a cup placed nearby. The snowman appears to be "
+            "enjoying the warmth of the fire, and it appears to have a warm and cozy atmosphere."
+        )
 
         assert entities == [
             ('a campfire', (71, 81), [(0.171875, 0.015625, 0.484375, 0.984375)]),
@@ -548,4 +620,3 @@ class Kosmos2ModelIntegrationTest(unittest.TestCase):
             ('a pot', (140, 145), [(0.078125, 0.609375, 0.265625, 0.859375)]),
             ('a cup', (157, 162), [(0.890625, 0.765625, 0.984375, 0.984375)])
         ]
-
