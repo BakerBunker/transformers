@@ -17,7 +17,7 @@
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import torch
 import torch.utils.checkpoint
@@ -307,6 +307,11 @@ class Kosmos2ModelOutput(ModelOutput):
     image_connector_attentions: Optional[Tuple[torch.FloatTensor]] = None
     vision_model_output: BaseModelOutputWithPooling = None
 
+    def to_tuple(self) -> Tuple[Any]:
+        return tuple(
+            self[k] if k not in ["text_model_output", "vision_model_output"] else getattr(self, k).to_tuple()
+            for k in self.keys()
+        )
 
 @dataclass
 class Kosmos2ForConditionalGenerationModelOutput(ModelOutput):
@@ -359,6 +364,11 @@ class Kosmos2ForConditionalGenerationModelOutput(ModelOutput):
     image_connector_attentions: Optional[Tuple[torch.FloatTensor]] = None
     vision_model_output: BaseModelOutputWithPooling = None
 
+    def to_tuple(self) -> Tuple[Any]:
+        return tuple(
+            self[k] if k not in ["text_model_output", "vision_model_output"] else getattr(self, k).to_tuple()
+            for k in self.keys()
+        )
 
 # Copied from transformers.models.clip.modeling_clip.CLIPVisionEmbeddings with CLIP->Kosmos2
 class Kosmos2VisionEmbeddings(nn.Module):
@@ -1724,8 +1734,6 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            # if isinstance(vision_model_output, ModelOutput):
-            #     vision_model_output = vision_model_output.to_tuple()
             outputs = outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
@@ -1870,8 +1878,6 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            # if isinstance(vision_model_output, ModelOutput):
-            #     vision_model_output = vision_model_output.to_tuple()
             outputs = lm_outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
