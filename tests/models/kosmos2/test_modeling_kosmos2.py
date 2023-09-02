@@ -472,4 +472,82 @@ def prepare_img():
 @require_torch
 @slow
 class Kosmos2ModelIntegrationTest(unittest.TestCase):
-    pass
+
+    def test_snowman_image_captioning(self):
+
+        import requests
+
+        from PIL import Image
+        from transformers import AutoProcessor, AutoModelForVision2Seq
+
+        url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/snowman.png"
+
+        image = Image.open(requests.get(url, stream=True).raw)
+        image.save("new_image.jpg")
+        image = Image.open("new_image.jpg")
+
+        model = AutoModelForVision2Seq.from_pretrained("ydshieh/kosmos-2-patch14-224", trust_remote_code=True)
+        processor = AutoProcessor.from_pretrained("ydshieh/kosmos-2-patch14-224", trust_remote_code=True)
+
+        def run_example(prompt):
+
+            inputs = processor(text=prompt, images=image, return_tensors="pt")
+
+            generation_outputs = model.generate(
+                pixel_values=inputs["pixel_values"],
+                input_ids=inputs["input_ids"][:, :-1],
+                attention_mask=inputs["attention_mask"][:, :-1],
+                img_features=None,
+                img_attn_mask=inputs["img_attn_mask"][:, :-1],
+                use_cache=True,
+                max_new_tokens=64,
+                output_scores=True,
+                return_dict_in_generate=True,
+            )
+
+            scores = generation_outputs.scores
+            generated_ids = generation_outputs.sequences
+            generated_text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+            # Specify `cleanup_and_extract=False` in order to see the raw model generation.
+            processed_text = processor.post_process_generation(generated_text, cleanup_and_extract=False)
+            # By default, the generated  text is cleanup and the entities are extracted.
+            final_text, entities = processor.post_process_generation(generated_text)
+
+            return scores, generated_ids, generated_text, processed_text, final_text, entities
+
+        prompt = "<grounding>An image of"
+        scores, generated_ids, generated_text, processed_text, final_text, entities = run_example(prompt)
+
+        assert processed_text == (
+            "<grounding> An image of<phrase> a snowman</phrase><object><patch_index_0044><patch_index_0863></object> "
+            "warming himself by<phrase> a fire</phrase><object><patch_index_0005><patch_index_0911></object>."
+        )
+
+        assert final_text == "An image of a snowman warming himself by a fire."
+        assert entities == [
+            ('a snowman', (12, 21), [(0.390625, 0.046875, 0.984375, 0.828125)]),
+            ('a fire', (41, 47), [(0.171875, 0.015625, 0.484375, 0.890625)])
+        ]
+
+        prompt = "<grounding>Describe this image in detail:"
+        scores, generated_ids, generated_text, processed_text, final_text, entities = run_example(prompt)
+
+        assert processed_text == (
+            "<grounding> Describe this image in detail: The image features a snowman sitting by<phrase> a campfire"
+            "</phrase><object><patch_index_0005><patch_index_1007></object> in the snow. He is wearing<phrase> a hat"
+            "</phrase><object><patch_index_0048><patch_index_0250></object>,<phrase> scarf</phrase><object>"
+            "<patch_index_0240><patch_index_0604></object>, and<phrase> gloves</phrase><object><patch_index_0400>"
+            "<patch_index_0532></object>, with<phrase> a pot</phrase><object><patch_index_0610><patch_index_0872>"
+            "</object> nearby and<phrase> a cup</phrase><object>"
+        )
+        assert final_text == (
+            "Describe this image in detail: The image features a snowman sitting by a campfire in the snow. He is "
+            "wearing a hat, scarf, and gloves, with a pot nearby and a cup"
+        )
+        assert entities == [
+            ('a campfire', (71, 81), [(0.171875, 0.015625, 0.484375, 0.984375)]),
+            ('a hat', (109, 114), [(0.515625, 0.046875, 0.828125, 0.234375)]),
+            ('scarf', (116, 121), [(0.515625, 0.234375, 0.890625, 0.578125)]),
+            ('gloves', (127, 133), [(0.515625, 0.390625, 0.640625, 0.515625)]),
+            ('a pot', (140, 145), [(0.078125, 0.609375, 0.265625, 0.859375)]),
+        ]
