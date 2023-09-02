@@ -1719,6 +1719,8 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
+            if isinstance(vision_model_output, ModelOutput):
+                vision_model_output = vision_model_output.to_tuple()
             outputs = outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
@@ -1858,6 +1860,8 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
+            if isinstance(vision_model_output, ModelOutput):
+                vision_model_output = vision_model_output.to_tuple()
             outputs = lm_outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
