@@ -92,7 +92,7 @@ class Kosmos2TextConfig(PretrainedConfig):
     ```"""
     model_type = "kosmos_2_text_model"
     keys_to_ignore_at_inference = ["past_key_values"]
-    attribute_map = {"num_attention_heads": "attention_heads", "hidden_size": "embed_dim"}
+    attribute_map = {"num_attention_heads": "attention_heads", "hidden_size": "embed_dim", "num_hidden_layers": "layers"}
 
     def __init__(
         self,
