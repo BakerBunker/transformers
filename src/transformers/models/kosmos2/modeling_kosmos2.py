@@ -1704,7 +1704,7 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
                 return_dict=return_dict,
             )
             # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
-            image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
+            image_features = self.vision_model.model.post_layernorm(vision_model_output[0])
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
             image_features, image_connector_attentions = self.image_to_text_connector(image_features)
@@ -1849,7 +1849,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
                 return_dict=return_dict,
             )
             # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
-            image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
+            image_features = self.vision_model.model.post_layernorm(vision_model_output[0])
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
             image_features, image_connector_attentions = self.image_to_text_connector(image_features)
@@ -1908,7 +1908,7 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         if image_features is None:
             vision_model_output = self.vision_model(pixel_values)
             # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
-            image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
+            image_features = self.vision_model.model.post_layernorm(vision_model_output[0])
             # normalized features
             image_features = nn.functional.normalize(image_features, dim=-1)
             image_features, image_connector_attentions = self.image_to_text_connector(image_features)
