@@ -17,15 +17,15 @@
 
 import copy
 import inspect
+import numpy as np
 import os
+import requests
 import tempfile
 import unittest
 
-import numpy as np
-import requests
 
 from transformers.models.kosmos2.configuration_kosmos2 import Kosmos2TextConfig, Kosmos2VisionConfig
-from transformers import Kosmos2Config
+from transformers import AutoProcessor, AutoModelForVision2Seq, Kosmos2Config
 from transformers.testing_utils import require_torch, require_vision, slow, torch_device
 from transformers.utils import is_torch_available, is_vision_available
 
@@ -474,11 +474,6 @@ def prepare_img():
 class Kosmos2ModelIntegrationTest(unittest.TestCase):
 
     def test_snowman_image_captioning(self):
-
-        import requests
-
-        from PIL import Image
-        from transformers import AutoProcessor, AutoModelForVision2Seq
 
         url = "https://huggingface.co/ydshieh/kosmos-2-patch14-224/resolve/main/snowman.png"
 
