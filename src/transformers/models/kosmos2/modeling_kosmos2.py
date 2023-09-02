@@ -1161,7 +1161,7 @@ class Kosmos2TextTransformer(nn.Module):
             inputs_embeds = self.embed_tokens(input_ids)
 
         if image_features is not None:
-            inputs_embeds[img_input_mask.to(dtype=torch.bool)] = image_features
+            inputs_embeds[img_input_mask.to(dtype=torch.bool)] = image_features.view(-1, image_features.size(-1))
 
         inputs_embeds = inputs_embeds * self.embed_scale
 
