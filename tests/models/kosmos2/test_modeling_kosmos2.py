@@ -481,8 +481,8 @@ class Kosmos2ModelIntegrationTest(unittest.TestCase):
         image.save("new_image.jpg")
         image = Image.open("new_image.jpg")
 
-        model = AutoModelForVision2Seq.from_pretrained("ydshieh/kosmos-2-patch14-224")
-        processor = AutoProcessor.from_pretrained("ydshieh/kosmos-2-patch14-224")
+        model = AutoModelForVision2Seq.from_pretrained("ydshieh/temp-testing-kosmos-2")
+        processor = AutoProcessor.from_pretrained("ydshieh/temp-testing-kosmos-2")
 
         def run_example(prompt):
 
