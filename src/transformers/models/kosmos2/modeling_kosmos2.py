@@ -1697,7 +1697,12 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
             if pixel_values is None:
                 raise ValueError("You have to specify either `pixel_values` or `image_features`.")
 
-            vision_model_output = self.vision_model(pixel_values)
+            vision_model_output = self.vision_model(
+                pixel_values=pixel_values,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
             # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
             image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
@@ -1719,8 +1724,8 @@ class Kosmos2Model(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            if isinstance(vision_model_output, ModelOutput):
-                vision_model_output = vision_model_output.to_tuple()
+            # if isinstance(vision_model_output, ModelOutput):
+            #     vision_model_output = vision_model_output.to_tuple()
             outputs = outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
@@ -1837,7 +1842,12 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
             if pixel_values is None:
                 raise ValueError("You have to specify either `pixel_values` or `image_features`.")
 
-            vision_model_output = self.vision_model(pixel_values)
+            vision_model_output = self.vision_model(
+                pixel_values=pixel_values,
+                output_attentions=output_attentions,
+                output_hidden_states=output_hidden_states,
+                return_dict=return_dict,
+            )
             # The whole `last_hidden_state` through `post_layernorm` instead of just `pooled_output`.
             image_features = self.vision_model.model.post_layernorm(vision_model_output.last_hidden_state)
             # normalized features
@@ -1860,8 +1870,8 @@ class Kosmos2ForConditionalGeneration(Kosmos2PreTrainedModel):
         )
 
         if not return_dict:
-            if isinstance(vision_model_output, ModelOutput):
-                vision_model_output = vision_model_output.to_tuple()
+            # if isinstance(vision_model_output, ModelOutput):
+            #     vision_model_output = vision_model_output.to_tuple()
             outputs = lm_outputs + (image_features, image_connector_attentions, vision_model_output)
             return tuple(output for output in outputs if output is not None)
 
