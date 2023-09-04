@@ -141,7 +141,6 @@ class Kosmos2TokenizerFast(PreTrainedTokenizerFast):
         )
 
         self.vocab_file = vocab_file
-        self.can_save_slow_tokenizer = False if not self.vocab_file else True
 
         self.eod_token = "</doc>"
 
@@ -181,6 +180,10 @@ class Kosmos2TokenizerFast(PreTrainedTokenizerFast):
         if not _tag_and_patch_index_tokens_already_built:
             for idx, token in enumerate(self.tag_tokens + patch_index_tokens):
                 self.add_tokens(AddedToken(token, lstrip=True, rstrip=False))
+
+    @property
+    def can_save_slow_tokenizer(self) -> bool:
+        return os.path.isfile(self.vocab_file) if self.vocab_file else False
 
     def build_inputs_with_special_tokens(
         self, token_ids_0: List[int], token_ids_1: Optional[List[int]] = None
